@@ -5,6 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>School Management System - Login</title>
     <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
+    <style>
+      .role-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        background: rgba(15, 23, 42, 0.6);
+        padding: 5px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+      }
+      .role-tab-btn {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--text-secondary);
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 14px;
+      }
+      .role-tab-btn.active {
+        background: var(--accent-blue);
+        color: white;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+      }
+      .role-tab-btn:hover:not(.active) {
+        color: white;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .alert-box {
+        display: none;
+        padding: 12px 15px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        margin-bottom: 15px;
+      }
+      .alert-error {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
+      }
+      .alert-success {
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #86efac;
+      }
+    </style>
   </head>
 
   <body>
@@ -21,95 +71,9 @@
       <nav>
         <ul>
           <li class="active"><a href="index.html">Home</a></li>
-
-          <li class="dropdown">
-            Student
-            <ul class="dropdown-content">
-              <li>
-                <a
-                  href="add_student.html"
-                  onclick="checkAuthNav(event, 'add_student.html')"
-                  >Add Student</a
-                >
-              </li>
-              <li>
-                <a
-                  href="edit_student.html"
-                  onclick="checkAuthNav(event, 'edit_student.html')"
-                  >Edit Student</a
-                >
-              </li>
-              <li>
-                <a
-                  href="delete_student.html"
-                  onclick="checkAuthNav(event, 'delete_student.html')"
-                  >Delete Student</a
-                >
-              </li>
-            </ul>
-          </li>
-
-          <li class="dropdown">
-            Marks
-            <ul class="dropdown-content">
-              <li>
-                <a
-                  href="enter_marks.html"
-                  onclick="checkAuthNav(event, 'enter_marks.html')"
-                  >Enter Marks</a
-                >
-              </li>
-              <li>
-                <a
-                  href="edit_marks.html"
-                  onclick="checkAuthNav(event, 'edit_marks.html')"
-                  >Edit Marks</a
-                >
-              </li>
-              <li>
-                <a
-                  href="delete_marks.html"
-                  onclick="checkAuthNav(event, 'delete_marks.html')"
-                  >Delete Marks</a
-                >
-              </li>
-            </ul>
-          </li>
-
-          <li class="dropdown">
-            Attendance
-            <ul class="dropdown-content">
-              <li>
-                <a
-                  href="add_attendance.html"
-                  onclick="checkAuthNav(event, 'add_attendance.html')"
-                  >Add Attendance</a
-                >
-              </li>
-              <li>
-                <a
-                  href="edit_attendance.html"
-                  onclick="checkAuthNav(event, 'edit_attendance.html')"
-                  >Edit Attendance</a
-                >
-              </li>
-              <li>
-                <a
-                  href="delete_attendance.html"
-                  onclick="checkAuthNav(event, 'delete_attendance.html')"
-                  >Delete Attendance</a
-                >
-              </li>
-            </ul>
-          </li>
-
-          <li>
-            <a href="reports.html" onclick="checkAuthNav(event, 'reports.html')"
-              >Reports</a
-            >
-          </li>
-
-          <li onclick="logout()">Exit</li>
+          <li onclick="alert('Please log in with valid credentials first.')">Academics</li>
+          <li onclick="alert('Please log in with valid credentials first.')">Attendance</li>
+          <li onclick="alert('Please log in with valid credentials first.')">Reports</li>
         </ul>
       </nav>
     </header>
@@ -124,29 +88,56 @@
 
       <div class="Login">
         <div class="form-container">
-          <h2>ADMINISTRATOR LOGIN</h2>
+          <div class="role-tabs">
+            <button
+              type="button"
+              class="role-tab-btn active"
+              id="adminTab"
+              onclick="selectRole('admin')"
+            >
+              Administrator
+            </button>
+            <button
+              type="button"
+              class="role-tab-btn"
+              id="teacherTab"
+              onclick="selectRole('teacher')"
+            >
+              Teacher
+            </button>
+          </div>
 
-          <p>Enter username and password</p>
+          <h2 id="loginTitle">ADMINISTRATOR LOGIN</h2>
+          <p id="loginSubtitle">Enter administrator username and password</p>
+
+          <div id="alertBox" class="alert-box alert-error"></div>
 
           <form id="loginForm">
             <div class="username">
-              <label for="username">Username :</label>
+              <label for="username" id="usernameLabel">Username :</label>
               <input
                 type="text"
                 id="username"
                 name="username"
                 autocomplete="off"
+                placeholder="e.g. admin"
                 required
               />
             </div>
 
             <div class="password">
               <label for="password">Password :</label>
-              <input type="password" id="password" name="password" required />
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter your password"
+                required
+              />
             </div>
 
             <div class="submit">
-              <button type="submit">Login</button>
+              <button type="submit" id="loginBtn">Login</button>
             </div>
           </form>
         </div>
@@ -154,46 +145,100 @@
     </div>
 
     <script>
+      let currentRole = "admin";
+
+      function selectRole(role) {
+        currentRole = role;
+        hideAlert();
+
+        const adminTab = document.getElementById("adminTab");
+        const teacherTab = document.getElementById("teacherTab");
+        const loginTitle = document.getElementById("loginTitle");
+        const loginSubtitle = document.getElementById("loginSubtitle");
+        const usernameLabel = document.getElementById("usernameLabel");
+        const usernameInput = document.getElementById("username");
+
+        if (role === "admin") {
+          adminTab.classList.add("active");
+          teacherTab.classList.remove("active");
+          loginTitle.textContent = "ADMINISTRATOR LOGIN";
+          loginSubtitle.textContent = "Enter administrator username and password";
+          usernameLabel.textContent = "Username :";
+          usernameInput.placeholder = "e.g. admin";
+        } else {
+          teacherTab.classList.add("active");
+          adminTab.classList.remove("active");
+          loginTitle.textContent = "TEACHER LOGIN";
+          loginSubtitle.textContent = "Enter teacher ID (e.g. TCH001) or email";
+          usernameLabel.textContent = "Teacher ID / Email :";
+          usernameInput.placeholder = "e.g. TCH001 or teacher@school.com";
+        }
+        usernameInput.focus();
+      }
+
+      function showAlert(msg, isError = true) {
+        const box = document.getElementById("alertBox");
+        box.textContent = msg;
+        box.className = isError ? "alert-box alert-error" : "alert-box alert-success";
+        box.style.display = "block";
+      }
+
+      function hideAlert() {
+        const box = document.getElementById("alertBox");
+        box.style.display = "none";
+      }
+
       document
         .getElementById("loginForm")
-        .addEventListener("submit", function (e) {
+        .addEventListener("submit", async function (e) {
           e.preventDefault();
+          hideAlert();
 
-          const username = document.getElementById("username").value;
+          const username = document.getElementById("username").value.trim();
           const password = document.getElementById("password").value;
+          const loginBtn = document.getElementById("loginBtn");
 
-          if (
-            (username === "admin" && password === "admin123") ||
-            (username === "admin" && password === "admin")
-          ) {
-            sessionStorage.setItem("isLoggedIn", "true");
-            alert("Login Successful");
+          loginBtn.disabled = true;
+          loginBtn.textContent = "Signing In...";
 
-            // Redirect after login
-            window.location.href = "dbms_home.html";
-          } else {
-            alert("Invalid Username or Password");
+          try {
+            const response = await fetch("http://localhost:5000/api/auth/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username,
+                password,
+                role: currentRole,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.message || "Invalid credentials.");
+            }
+
+            // Save verified JWT token and database claims
+            SMS_AUTH.setAuth(data.token, data.user);
+            showAlert("Login successful! Redirecting...", false);
+
+            setTimeout(() => {
+              if (data.user.role === "teacher") {
+                window.location.href = "teacher_dashboard.html";
+              } else {
+                window.location.href = "dbms_home.html";
+              }
+            }, 600);
+          } catch (error) {
+            console.error("Login failed:", error);
+            showAlert(error.message || "Failed to connect to authentication server.");
+          } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = "Login";
           }
         });
-
-      function checkAuthNav(event, targetUrl) {
-        if (sessionStorage.getItem("isLoggedIn") !== "true") {
-          event.preventDefault();
-          alert(
-            "Access Restricted! Please log in with valid credentials first.",
-          );
-          document.getElementById("username").focus();
-        } else {
-          window.location.href = targetUrl;
-        }
-      }
-
-      function logout() {
-        alert(
-          "You are already on the Login page. Please log in to access the system.",
-        );
-        document.getElementById("username").focus();
-      }
     </script>
   </body>
 </html>

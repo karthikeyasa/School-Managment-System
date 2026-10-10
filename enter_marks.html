@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Enter Marks</title>
     <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
     <script>
-      if (sessionStorage.getItem("isLoggedIn") !== "true") {
-        alert("Access Restricted! Please log in first.");
-        window.location.href = "index.html";
-      }
+      SMS_AUTH.requireAuth();
     </script>
   </head>
 
@@ -34,10 +32,15 @@
               <li><a href="add_student.html">Add Student</a></li>
               <li><a href="edit_student.html">Edit Student</a></li>
               <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
             </ul>
           </li>
 
-          <li class="dropdown">
+          <li><a href="teachers.html">Teachers</a></li>
+          <li><a href="classes.html">Academics</a></li>
+          <li><a href="timetable.html">Timetable</a></li>
+
+          <li class="dropdown active">
             Marks
             <ul class="dropdown-content">
               <li><a href="enter_marks.html">Enter Marks</a></li>
@@ -55,11 +58,10 @@
             </ul>
           </li>
 
-          <li>
-            <a href="reports.html">Reports</a>
-          </li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li><a href="reports.html">Reports</a></li>
 
-          <li onclick="logout()">Exit</li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
         </ul>
       </nav>
     </header>
@@ -69,7 +71,7 @@
 
       <form id="marksForm">
         <label>Registration Number</label>
-        <input type="text" id="regno" required />
+        <input type="text" id="regno" required placeholder="e.g. STU001" />
 
         <label>Exam</label>
         <select id="exam">
@@ -80,23 +82,22 @@
           <option>Final Exam</option>
         </select>
 
-        <label>First Language</label>
-        <input type="number" id="firstlanguage" min="0" max="100" required />
+        <div id="coreSubjectsContainer">
+          <label>First Language</label>
+          <input type="number" id="firstlanguage" min="0" max="100" />
 
-        <label>Second Language</label>
-        <input type="number" id="secondlanguage" min="0" max="100" required />
+          <label>Second Language</label>
+          <input type="number" id="secondlanguage" min="0" max="100" />
 
-        <label>Mathematics</label>
-        <input type="number" id="maths" min="0" max="100" required />
+          <label>Mathematics</label>
+          <input type="number" id="maths" min="0" max="100" />
 
-        <label>Science</label>
-        <input type="number" id="science" min="0" max="100" required />
+          <label>Science</label>
+          <input type="number" id="science" min="0" max="100" />
 
-        <label>Arts</label>
-        <input type="number" id="arts" min="0" max="100" required />
-
-        <label>Other (If Any)</label>
-        <input type="number" id="other" min="0" max="100" value="0" />
+          <label>Arts</label>
+          <input type="number" id="arts" min="0" max="100" />
+        </div>
 
         <button type="submit">Save Marks</button>
       </form>
@@ -109,62 +110,54 @@
           e.preventDefault();
 
           const reg_no = document.getElementById("regno").value.trim();
-
           const exam_type = document.getElementById("exam").value;
+
+          const flVal = document.getElementById("firstlanguage").value;
+          const slVal = document.getElementById("secondlanguage").value;
+          const mathVal = document.getElementById("maths").value;
+          const sciVal = document.getElementById("science").value;
+          const artVal = document.getElementById("arts").value;
 
           const marks = {
             reg_no: reg_no,
             exam_type: exam_type,
-            first_language: Number(
-              document.getElementById("firstlanguage").value,
-            ),
-            second_language: Number(
-              document.getElementById("secondlanguage").value,
-            ),
-            mathematics: Number(document.getElementById("maths").value),
-            science: Number(document.getElementById("science").value),
-            arts: Number(document.getElementById("arts").value),
-            others: Number(document.getElementById("other").value || 0),
           };
+
+          if (flVal !== "") marks.first_language = Number(flVal);
+          if (slVal !== "") marks.second_language = Number(slVal);
+          if (mathVal !== "") marks.mathematics = Number(mathVal);
+          if (sciVal !== "") marks.science = Number(sciVal);
+          if (artVal !== "") marks.arts = Number(artVal);
+
+          if (
+            marks.first_language === undefined &&
+            marks.second_language === undefined &&
+            marks.mathematics === undefined &&
+            marks.science === undefined &&
+            marks.arts === undefined
+          ) {
+            alert("Please enter marks for at least one subject.");
+            return;
+          }
 
           try {
             // Check whether the student exists
-            const studentResponse = await fetch(
-              `http://localhost:5000/api/students/${encodeURIComponent(reg_no)}`,
+            const studentResponse = await SMS_AUTH.fetch(
+              `http://localhost:5000/api/students/${encodeURIComponent(reg_no)}`
             );
 
             if (!studentResponse.ok) {
               throw new Error(
-                "Student with this Registration Number does not exist.",
+                "Student with this Registration Number does not exist or is not accessible."
               );
             }
 
-            // Check existing marks for this student
-            const marksResponse = await fetch(
-              `http://localhost:5000/api/marks/${encodeURIComponent(reg_no)}`,
-            );
-
-            const existingMarks = await marksResponse.json();
-
-            if (marksResponse.ok && Array.isArray(existingMarks)) {
-              const alreadyExists = existingMarks.some(
-                (mark) => mark.exam_type === exam_type,
-              );
-
-              if (alreadyExists) {
-                alert("Marks for this exam already exist!");
-                return;
-              }
-            }
-
-            // Send marks to PostgreSQL through the backend
-            const response = await fetch("http://localhost:5000/api/marks", {
+            // Save marks through backend
+            const response = await SMS_AUTH.fetch("http://localhost:5000/api/marks", {
               method: "POST",
-
               headers: {
                 "Content-Type": "application/json",
               },
-
               body: JSON.stringify(marks),
             });
 
@@ -172,26 +165,20 @@
 
             if (!response.ok) {
               throw new Error(
-                data.error || data.message || "Failed to save marks",
+                data.error || data.message || "Failed to save marks"
               );
             }
 
             alert("Marks Saved Successfully!");
-
             this.reset();
           } catch (error) {
             console.error("Error saving marks:", error);
-
             alert("Failed to save marks: " + error.message);
           }
         });
 
       function logout() {
-        if (confirm("Do you want to exit?")) {
-          sessionStorage.removeItem("isLoggedIn");
-
-          window.location.href = "index.html";
-        }
+        SMS_AUTH.logout();
       }
     </script>
   </body>

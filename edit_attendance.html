@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Edit Attendance</title>
     <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
     <script>
-      if (sessionStorage.getItem("isLoggedIn") !== "true") {
-        alert("Access Restricted! Please log in first.");
-        window.location.href = "index.html";
-      }
+      SMS_AUTH.requireAuth();
     </script>
   </head>
 
@@ -34,8 +32,13 @@
               <li><a href="add_student.html">Add Student</a></li>
               <li><a href="edit_student.html">Edit Student</a></li>
               <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
             </ul>
           </li>
+
+          <li><a href="teachers.html">Teachers</a></li>
+          <li><a href="classes.html">Academics</a></li>
+          <li><a href="timetable.html">Timetable</a></li>
 
           <li class="dropdown">
             Marks
@@ -46,7 +49,7 @@
             </ul>
           </li>
 
-          <li class="dropdown">
+          <li class="dropdown active">
             Attendance
             <ul class="dropdown-content">
               <li><a href="add_attendance.html">Add Attendance</a></li>
@@ -55,11 +58,10 @@
             </ul>
           </li>
 
-          <li>
-            <a href="reports.html">Reports</a>
-          </li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li><a href="reports.html">Reports</a></li>
 
-          <li onclick="logout()">Exit</li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
         </ul>
       </nav>
     </header>
@@ -68,16 +70,25 @@
       <h2>EDIT ATTENDANCE</h2>
 
       <label>Registration Number</label>
-      <input type="text" id="regno" />
+      <input type="text" id="regno" placeholder="e.g. STU001" />
 
       <label>Date</label>
       <input type="date" id="date" />
 
       <button type="button" onclick="getAttendance()">Get Attendance</button>
 
-      <form id="editForm">
+      <div id="recordSelectGroup" style="display: none; margin-top: 15px;">
+        <label>Select Attendance Session / Subject:</label>
+        <select id="recordSelect" onchange="onSelectRecord(this.value)">
+        </select>
+      </div>
+
+      <form id="editForm" style="margin-top: 15px;">
         <label>Student Name</label>
-        <input type="text" id="name" required />
+        <input type="text" id="name" readonly />
+
+        <label>Subject / Session</label>
+        <input type="text" id="subjectName" readonly />
 
         <label>Status</label>
         <select id="status" required>
@@ -92,10 +103,10 @@
 
     <script>
       let currentAttendanceId = null;
+      let matchedRecords = [];
 
       async function getAttendance() {
         const regno = document.getElementById("regno").value.trim();
-
         const date = document.getElementById("date").value;
 
         if (!regno || !date) {
@@ -104,15 +115,15 @@
         }
 
         try {
-          const response = await fetch(
-            `http://localhost:5000/api/attendance/${encodeURIComponent(regno)}`,
+          const response = await SMS_AUTH.fetch(
+            `http://localhost:5000/api/attendance/${encodeURIComponent(regno)}`
           );
 
           const data = await response.json();
 
           if (!response.ok) {
             throw new Error(
-              data.error || data.message || "Failed to retrieve attendance",
+              data.error || data.message || "Failed to retrieve attendance"
             );
           }
 
@@ -120,46 +131,51 @@
             throw new Error("Invalid attendance data received.");
           }
 
-          // Find attendance for the selected date
-          const record = data.find((attendance) => {
-            if (!attendance.attendance_date) {
-              return false;
-            }
-
-            const attendanceDate = new Date(
-              attendance.attendance_date,
-            ).toLocaleDateString("en-CA", {
-              timeZone: "Asia/Kolkata",
-            });
-
-            return attendanceDate === date;
+          // Find all attendance records for the selected date
+          matchedRecords = data.filter((attendance) => {
+            if (!attendance.attendance_date) return false;
+            return attendance.attendance_date === date;
           });
 
-          if (!record) {
+          if (matchedRecords.length === 0) {
             currentAttendanceId = null;
-
+            matchedRecords = [];
+            document.getElementById("recordSelectGroup").style.display = "none";
             document.getElementById("name").value = "";
+            document.getElementById("subjectName").value = "";
             document.getElementById("status").value = "";
 
-            alert("Attendance record not found.");
+            alert("Attendance record not found for this date.");
             return;
           }
 
-          // Store database attendance ID
-          currentAttendanceId = record.attend_id;
+          const sel = document.getElementById("recordSelect");
+          sel.innerHTML = matchedRecords
+            .map(
+              (r, idx) =>
+                `<option value="${idx}">${r.subject_name ? r.subject_name + ' (' + r.subject_code + ')' : (r.attendance_type || 'General')} - Status: ${r.status}</option>`
+            )
+            .join("");
 
-          // Fill student name
-          document.getElementById("name").value = record.full_name || "";
-
-          // Fill current attendance status
-          document.getElementById("status").value = record.status || "";
-
+          document.getElementById("recordSelectGroup").style.display = "block";
+          onSelectRecord(0);
           alert("Attendance details loaded successfully!");
         } catch (error) {
           console.error("Error getting attendance:", error);
-
           alert("Failed to get attendance: " + error.message);
         }
+      }
+
+      function onSelectRecord(idx) {
+        const record = matchedRecords[Number(idx)];
+        if (!record) return;
+
+        currentAttendanceId = record.attend_id;
+        document.getElementById("name").value = record.full_name || "";
+        document.getElementById("subjectName").value = record.subject_name
+          ? `${record.subject_name} (${record.subject_code})`
+          : (record.attendance_type || "General");
+        document.getElementById("status").value = record.status || "";
       }
 
       document
@@ -181,53 +197,44 @@
 
           const attendance = {
             attendance_date: document.getElementById("date").value,
-
             status: status,
           };
 
           try {
-            const response = await fetch(
+            const response = await SMS_AUTH.fetch(
               `http://localhost:5000/api/attendance/${currentAttendanceId}`,
               {
                 method: "PUT",
-
                 headers: {
                   "Content-Type": "application/json",
                 },
-
                 body: JSON.stringify(attendance),
-              },
+              }
             );
 
             const data = await response.json();
 
             if (!response.ok) {
               throw new Error(
-                data.error || data.message || "Failed to update attendance",
+                data.error || data.message || "Failed to update attendance"
               );
             }
 
             alert("Attendance Updated Successfully!");
-
             document.getElementById("editForm").reset();
-
             document.getElementById("regno").value = "";
             document.getElementById("date").value = "";
-
+            document.getElementById("recordSelectGroup").style.display = "none";
             currentAttendanceId = null;
+            matchedRecords = [];
           } catch (error) {
             console.error("Error updating attendance:", error);
-
             alert("Failed to update attendance: " + error.message);
           }
         });
 
       function logout() {
-        if (confirm("Do you want to exit?")) {
-          sessionStorage.removeItem("isLoggedIn");
-
-          window.location.href = "index.html";
-        }
+        SMS_AUTH.logout();
       }
     </script>
   </body>

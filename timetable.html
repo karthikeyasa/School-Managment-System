@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School Management System - Timetable</title>
+    <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
+    <script>
+      SMS_AUTH.requireAuth("admin");
+    </script>
+    <style>
+      .page-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+      }
+      .grid-layout {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 30px;
+      }
+      @media (max-width: 900px) {
+        .grid-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      .form-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 25px;
+        box-shadow: var(--shadow-lg);
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .form-group label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+      .form-group input, .form-group select {
+        padding: 10px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: white;
+        font-size: 14px;
+      }
+      .btn-primary {
+        padding: 10px 18px;
+        background: var(--accent-blue);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: var(--transition);
+      }
+      .btn-primary:hover {
+        background: #2563eb;
+      }
+      .btn-sm-danger {
+        padding: 5px 10px;
+        background: var(--accent-rose);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .data-table th, .data-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .data-table th {
+        background: rgba(15, 23, 42, 0.7);
+        color: #93c5fd;
+        font-size: 13px;
+      }
+      .filter-bar {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .filter-bar select {
+        padding: 8px 12px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: white;
+        font-size: 13px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.4);
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- HEADER -->
+    <header>
+      <div class="logo">
+        <img
+          src="https://i.pinimg.com/1200x/af/85/fd/af85fd005cb098111b85832faf17f00f.jpg"
+          alt="School Logo"
+        />
+      </div>
+
+      <h1>School Management System</h1>
+
+      <nav>
+        <ul>
+          <li><a href="dbms_home.html">Home</a></li>
+          <li class="dropdown">
+            Student
+            <ul class="dropdown-content">
+              <li><a href="add_student.html">Add Student</a></li>
+              <li><a href="edit_student.html">Edit Student</a></li>
+              <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
+            </ul>
+          </li>
+          <li><a href="teachers.html">Teachers</a></li>
+          <li><a href="classes.html">Academics</a></li>
+          <li class="active"><a href="timetable.html">Timetable</a></li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li><a href="reports.html">Reports</a></li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
+        </ul>
+      </nav>
+    </header>
+
+    <div class="page-container">
+      <div style="margin-bottom: 25px;">
+        <h2 style="margin: 0; color: white;">Timetable Management</h2>
+        <p style="margin: 4px 0 0; color: var(--text-secondary); font-size: 14px;">
+          Schedule class periods with automatic conflict detection for teachers and classrooms.
+        </p>
+      </div>
+
+      <div class="grid-layout">
+        <!-- ADD TIMETABLE ENTRY FORM -->
+        <div class="form-card">
+          <h3 style="margin-top: 0; color: white;">Schedule Class Period</h3>
+          <form id="timetableForm" onsubmit="addTimetableEntry(event)">
+            <div class="form-group">
+              <label>Class *</label>
+              <select id="classSelect" required>
+                <option value="">Select Class</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Subject *</label>
+              <select id="subjectSelect" required>
+                <option value="">Select Subject</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Teacher *</label>
+              <select id="teacherSelect" required>
+                <option value="">Select Teacher</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Day of Week *</label>
+              <select id="daySelect" required>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label>Start Time *</label>
+                <input type="time" id="startTimeInput" required />
+              </div>
+              <div class="form-group">
+                <label>End Time *</label>
+                <input type="time" id="endTimeInput" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Room / Hall</label>
+              <input type="text" id="roomInput" placeholder="e.g. Room 101, Lab A" />
+            </div>
+
+            <button type="submit" class="btn-primary" id="saveTimetableBtn">+ Add to Timetable</button>
+          </form>
+        </div>
+
+        <!-- TIMETABLE LIST & FILTERS -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-lg);">
+          <div class="filter-bar">
+            <h3 style="margin: 0; color: white; flex: 1;">Master Schedule</h3>
+            <label style="font-size: 13px; color: var(--text-secondary);">Filter by Class:</label>
+            <select id="filterClass" onchange="loadTimetable()">
+              <option value="">All Classes</option>
+            </select>
+            <select id="filterDay" onchange="loadTimetable()">
+              <option value="">All Days</option>
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+            </select>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Time</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Teacher</th>
+                <th>Room</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="timetableBody">
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading timetable...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+      async function initTimetablePage() {
+        await Promise.all([loadClassesForSelect(), loadSubjectsForSelect(), loadTeachersForSelect()]);
+        loadTimetable();
+      }
+
+      async function loadClassesForSelect() {
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/classes");
+          const list = await res.json();
+          const select = document.getElementById("classSelect");
+          const filter = document.getElementById("filterClass");
+
+          list.forEach(c => {
+            select.innerHTML += `<option value="${c.class_id}">${c.class_code}</option>`;
+            filter.innerHTML += `<option value="${c.class_id}">${c.class_code}</option>`;
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadSubjectsForSelect() {
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/subjects");
+          const list = await res.json();
+          const select = document.getElementById("subjectSelect");
+          list.forEach(s => {
+            select.innerHTML += `<option value="${s.subject_id}">${s.subject_name} (${s.subject_code})</option>`;
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadTeachersForSelect() {
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/teachers?status=Active");
+          const list = await res.json();
+          const select = document.getElementById("teacherSelect");
+          list.forEach(t => {
+            select.innerHTML += `<option value="${t.teacher_id}">${t.full_name} (${t.teacher_id})</option>`;
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadTimetable() {
+        const classId = document.getElementById("filterClass").value;
+        const day = document.getElementById("filterDay").value;
+        let url = "http://localhost:5000/api/timetable?";
+        if (classId) url += `class_id=${encodeURIComponent(classId)}&`;
+        if (day) url += `day_of_week=${encodeURIComponent(day)}&`;
+
+        const tbody = document.getElementById("timetableBody");
+        try {
+          const res = await SMS_AUTH.fetch(url);
+          const list = await res.json();
+
+          if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 25px;">No timetable entries scheduled.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = list.map(tt => `
+            <tr>
+              <td><b>${tt.day_of_week}</b></td>
+              <td>${tt.start_time} - ${tt.end_time}</td>
+              <td><span class="badge">${tt.class_code}</span></td>
+              <td style="color: white;">${tt.subject_name}</td>
+              <td>${tt.teacher_name}</td>
+              <td>${tt.room_number || "Default"}</td>
+              <td style="text-align: right;">
+                <button class="btn-sm-danger" onclick="deleteTimetableEntry(${tt.timetable_id})">Delete</button>
+              </td>
+            </tr>
+          `).join("");
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="7" style="color: #ef4444; text-align: center;">Error loading schedule.</td></tr>`;
+        }
+      }
+
+      async function addTimetableEntry(e) {
+        e.preventDefault();
+        const payload = {
+          class_id: parseInt(document.getElementById("classSelect").value, 10),
+          subject_id: parseInt(document.getElementById("subjectSelect").value, 10),
+          teacher_id: document.getElementById("teacherSelect").value,
+          day_of_week: document.getElementById("daySelect").value,
+          start_time: document.getElementById("startTimeInput").value,
+          end_time: document.getElementById("endTimeInput").value,
+          room_number: document.getElementById("roomInput").value.trim()
+        };
+
+        if (payload.start_time >= payload.end_time) {
+          alert("Start time must be strictly before end time.");
+          return;
+        }
+
+        const btn = document.getElementById("saveTimetableBtn");
+        btn.disabled = true;
+
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/timetable", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.message || "Failed to schedule timetable entry.");
+          }
+
+          alert("Timetable entry scheduled successfully!");
+          loadTimetable();
+        } catch (err) {
+          alert("Scheduling Conflict / Error:\n" + err.message);
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function deleteTimetableEntry(id) {
+        if (!confirm("Are you sure you want to remove this timetable entry?")) return;
+        try {
+          const res = await SMS_AUTH.fetch(`http://localhost:5000/api/timetable/${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to delete entry.");
+          alert("Entry removed.");
+          loadTimetable();
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+      }
+
+      window.addEventListener("DOMContentLoaded", initTimetablePage);
+    </script>
+  </body>
+</html>

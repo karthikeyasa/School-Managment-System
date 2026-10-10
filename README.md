@@ -2,116 +2,124 @@
 
 A full-stack School Management System developed as a DBMS project using **HTML, CSS, JavaScript, Node.js, Express.js, and PostgreSQL**.
 
-The system provides modules for managing students, marks, attendance, and academic reports through a browser-based interface backed by a PostgreSQL database.
+The system provides modules for managing students, teachers, classes, subjects, timetables, normalized marks, subject-specific attendance, and academic reports through a browser-based interface backed by a PostgreSQL database.
 
 ---
 
 ## 1. Project Overview
 
-The School Management System provides a centralized platform for managing essential student and academic information.
+The School Management System provides a centralized platform for managing essential student and academic information with fine-grained role-based permissions for Administrators and Teachers.
 
 ### Objectives
 
-- Manage student records.
-- Add, edit, search, and delete student information.
-- Manage student marks for examinations.
-- Record and manage attendance.
-- Generate academic reports.
-- Demonstrate PostgreSQL database concepts.
-- Implement constraints, foreign keys, views, indexes, joins, aggregation, and SQL queries.
-- Provide a complete frontend-backend-database workflow.
+- Manage student records with safe dependency handling.
+- Maintain a normalized, attempt-aware marks system across 5 core academic subjects.
+- Support subject-specific attendance and period-level tracking while preserving legacy general attendance.
+- Enforce strict teacher-level authorization (teachers can create, view, edit, and delete marks/attendance only for their assigned classes and subjects).
+- Generate academic reports with stable identifiers and correct average calculations.
+- Demonstrate advanced PostgreSQL database concepts: normalized tables, composite unique constraints, partial indexes, views, aggregations, and data-safe migrations.
 
 ---
 
 ## 2. Features
 
+### Authentication & Role-Based Access Control (RBAC)
+- Secure dual-role login (Administrator and Teacher)
+- Password hashing with bcrypt (10 rounds)
+- JWT token authentication with 8-hour expiry and fail-secure secret verification
+- Automatic legacy plaintext password upgrade upon valid administrator login
+- Role-based server-side API route guards (`requireAdmin`, `requireTeacher`, `requireTeacherOrAdmin`)
+- Client-side navigation authorization with session preservation
+
+### Teacher Management (Administrator)
+- Add, view, search, and edit teacher profiles
+- Status management (Active, Inactive, Suspended)
+- Safe teacher deletion with foreign key dependency checks
+- Tracks Teacher ID, full name, email, phone, qualification, specialization, and joining date
+
+### Class, Subject & Assignment Management (Administrator)
+- Class management: Add, list, search classes with academic year and capacity
+- Subject catalog: Core 5 curriculum subjects (`FL101` First Language, `SL102` Second Language, `MTH103` Mathematics, `SCI104` Science, `ART105` Arts); retired legacy "Others" subject
+- Faculty assignment: Assign teachers to specific class and subject pairings
+- Duplicate assignment prevention (`uq_teacher_class_subject` constraint)
+- Automatic mapping between student class strings and registered class records
+
+### Teacher Dashboard (Faculty Portal)
+- Personalized faculty overview: profile summary, assigned classes, and subjects
+- Scoped student rosters: view students enrolled only in authorized classes
+- Subject-specific attendance recording restricted to authorized class and subject pairings
+- Normalized subject marks entry restricted to authorized subjects and classes
+- Weekly teaching schedule / timetable display
+- School notices and announcements board
+
+### Timetable Management (Administrator & Teacher)
+- Weekly schedule management by class, subject, teacher, day, and time slots
+- Room assignment and slot management
+- Double-booking / conflict prevention:
+  - Class schedule conflict detection (`start_A < end_B AND end_A > start_B`)
+  - Teacher schedule conflict detection preventing faculty double-booking
+- Faculty schedule viewer (`/my-schedule`)
+
+### Announcements & Notices
+- Publish school-wide announcements with priority indicators (Urgent, High, Normal, Low)
+- Target audience scoping (`All`, `Teachers`, `Students`)
+- Active/inactive announcement status toggling
+- Pinned and recent notice boards
+
 ### Student Management
+- Add, edit, delete, and search students by registration number
+- Student directory with live search and class filtering
+- Profile details: contact info, date of birth, blood group, address
+- Deletion safety: Verifies no dependent academic records (`student_subject_marks`, `attendance`, `report`) exist before deletion
 
-- Add students
-- Edit students
-- Delete students
-- Search students by registration number
-- Student directory
-- Filter students by class
+### Normalized Marks Management
+- Fully normalized marks schema (`student_subject_marks`) storing individual subject records per student, subject, exam, academic year, and retake attempt
+- Retired legacy `others` column and `OTH106` subject across database, backend, frontend, and tests
+- Preserved 100% of historical `others` marks in `legacy_marks_archive`
+- Granular authorization: Teachers can create, view, edit, and delete marks only for students, classes, and subjects assigned to them; administrators retain global access
+- Automatic report synchronization with stable `report_id` tracking
 
-### Dashboard
+### Subject-Specific Attendance Management
+- Granular subject-level attendance tracking (`attendance_type = 'Subject'`) referencing `subject_id` and optional timetable periods (`timetable_id`)
+- Backward compatibility: Preserves all historical attendance records as `attendance_type = 'General'`
+- Partial unique indexes prevent duplicates for General daily attendance, Subject daily attendance, and Subject period-based attendance
+- Mutual consistency verification: Backend verifies teacher assignment and timetable consistency before recording or updating attendance
+- Granular authorization: Teachers can create, view, edit, and delete attendance only for their assigned classes and subjects
 
-- Display total number of students
-- Display total marks records
-- Display total attendance records
-- Display average marks
-- Display student distribution by class
-
-### Marks Management
-
-- Enter marks
-- Edit marks
-- Delete marks
-- Store marks for First Language, Second Language, Mathematics, Science, Arts, and Others
-- Support different examination types
-
-### Attendance Management
-
-- Add attendance
-- Edit attendance
-- Delete attendance
-- View attendance by student
-- Prevent duplicate attendance for the same student and date
-- Attendance summaries and percentages
-
-### Reports
-
-- Generate student academic reports
-- Display subject-wise marks
-- Calculate total marks
-- Calculate average
-- Calculate grade
-
-### Dashboard
-
-| Method | Endpoint         | Description                                    |
-| ------ | ---------------- | ---------------------------------------------- |
-| GET    | `/api/dashboard` | Get dashboard statistics and students by class |
+### Extended Reports & Analytics
+- Individual student report card with total marks, average across 5 core subjects (divisor `5.0`), and grade derivation
+- Class-wise academic performance report pivoted dynamically from normalized marks
+- Class attendance statistics and percentage distribution
+- Teacher workload analysis (assigned classes, subjects, and weekly periods)
+- Upgraded `student_reports` view with stable `report_id` join and divisor `5.0`
 
 ### Database Features
-
-- Primary keys
-- Foreign keys
-- UNIQUE constraints
-- CHECK constraints
-- Identity columns
-- Database views
-- Indexes
-- Aggregate queries
-- GROUP BY
-- INNER JOIN
-- LEFT JOIN
-- Subqueries
+- Primary keys and Foreign keys with cascading integrity
+- Composite UNIQUE constraints: `(reg_no, subject_id, exam_type, academic_year, attempt_number)` on marks; `(reg_no, exam_type, academic_year, attempt_number)` on canonical report sittings
+- Partial UNIQUE indexes on attendance distinguishing General and Subject attendance
+- CHECK constraints (mark ranges 0–100, attendance status enum, priority enum)
+- Identity / auto-increment serial columns
+- Data-safe migration (`002_normalize_marks_and_subject_attendance.sql`) and complete rollback script (`rollback_002_migration.sql`)
 
 ---
 
 ## 3. Tech Stack
 
 ### Frontend
-
 - HTML5
 - CSS3
-- JavaScript
+- JavaScript (Vanilla ES6+)
 
 ### Backend
-
 - Node.js
 - Express.js
 
 ### Database
-
 - PostgreSQL 18
 
 ### Tools
-
 - Visual Studio Code
-- Git
-- GitHub
+- Git & GitHub
 - PostgreSQL / pgAdmin
 
 ---
@@ -120,32 +128,43 @@ The School Management System provides a centralized platform for managing essent
 
 ```mermaid
 flowchart TD
-    A[Frontend<br/>HTML • CSS • JavaScript]
-    B[Backend<br/>Node.js • Express.js<br/>REST API]
-    C[PostgreSQL<br/>school_management]
+    subgraph Frontend["Frontend Client (Browser)"]
+        UI_Admin["Admin Portal<br/>(dbms_home, teachers, classes, timetable, announcements)"]
+        UI_Teacher["Teacher Portal<br/>(teacher_dashboard, marks, attendance, schedule)"]
+        Auth_JS["Client Auth Helper<br/>(auth.js: JWT Bearer Tokens, Role Guards)"]
+    end
 
-    A -->|HTTP Requests| B
-    B -->|SQL Queries| C
-    C -->|Query Results| B
-    B -->|JSON Response| A
-```
+    subgraph Backend["Backend API (Node.js & Express)"]
+        Server["Express HTTP Server<br/>(server.js)"]
+        MW_Auth["Auth Middleware<br/>(verifyToken, requireAdmin, requireTeacherOrAdmin)"]
+        
+        subgraph Routes["API Modules"]
+            R_Auth["/api/auth"]
+            R_Teach["/api/teachers"]
+            R_Class["/api/classes & /api/subjects"]
+            R_Assign["/api/assignments"]
+            R_TT["/api/timetable"]
+            R_Ann["/api/announcements"]
+            R_Stud["/api/students"]
+            R_Mark["/api/marks (Normalized)"]
+            R_Att["/api/attendance (Subject & General)"]
+            R_Rep["/api/reports (Divisor 5.0)"]
+            R_Dash["/api/teacher-dashboard"]
+        end
+    end
 
-The frontend uses JavaScript `fetch()` requests to communicate with the Express.js REST API. The backend processes these requests, executes SQL queries against PostgreSQL, and returns the results to the frontend.
+    subgraph Database["PostgreSQL 18 (Relational Engine)"]
+        DB_Core[("Core Relational Tables<br/>administrator, teacher, classes, subjects,<br/>teacher_assignment, timetable, announcements,<br/>student, student_subject_marks, legacy_marks_archive,<br/>attendance, report")]
+        DB_Views["Views & Constraints<br/>student_details, student_reports (5-core / 5.0),<br/>uq_student_subject_exam_attempt, partial attendance indexes"]
+    end
 
-### Request Flow
-
-```text
-User
-  ↓
-HTML / JavaScript Interface
-  ↓
-Express.js API
-  ↓
-PostgreSQL Database
-  ↓
-API Response
-  ↓
-Frontend Display
+    UI_Admin -->|HTTP + Bearer Token| Server
+    UI_Teacher -->|HTTP + Bearer Token| Server
+    Server --> MW_Auth
+    MW_Auth --> Routes
+    Routes -->|Parameterized SQL Queries| Database
+    Database -->|Query Results| Routes
+    Routes -->|JSON Response| Frontend
 ```
 
 ---
@@ -153,41 +172,68 @@ Frontend Display
 ## 5. Project Structure
 
 ```text
-school-managment-system/
+school-managment-system-antigravity/
 │
-├── index.html
-├── dbms_home.html
-├── add_student.html
-├── edit_student.html
-├── delete_student.html
-├── student_search.html
-├── enter_marks.html
-├── edit_marks.html
-├── delete_marks.html
-├── add_attendance.html
-├── edit_attendance.html
-├── delete_attendance.html
-├── reports.html
-├── dbms.css
+├── index.html                    # Common login portal (Administrator & Teacher tabs)
+├── auth.js                       # Frontend auth helper (token store, SMS_AUTH.fetch, guards)
+├── dbms.css                      # Global responsive stylesheet
+│
+├── dbms_home.html                # Administrator dashboard (metrics, stats, management hub)
+├── teachers.html                 # Teacher management (CRUD, status, profiles)
+├── classes.html                  # Academic management (Classes, Subjects, Assignments)
+├── timetable.html                # Timetable scheduling (conflict & overlap prevention)
+├── announcements.html            # School announcements publisher & audience filter
+│
+├── teacher_dashboard.html        # Scoped faculty dashboard (roster, quick subject attendance, marks, schedule)
+│
+├── add_student.html              # Add new student record
+├── edit_student.html             # Edit existing student profile
+├── delete_student.html           # Safely delete student record
+├── student_search.html           # Student directory & class filter
+│
+├── enter_marks.html              # Enter student marks (5 core subjects)
+├── edit_marks.html               # Edit student examination marks (5 core subjects)
+├── delete_marks.html             # Delete subject mark records
+│
+├── add_attendance.html           # Subject-specific and general attendance logging
+├── edit_attendance.html          # Edit attendance record
+├── delete_attendance.html        # Delete attendance record
+│
+├── reports.html                  # Reports center (Individual, Class Performance, Class Attendance, Workloads)
 │
 ├── backend/
-│   ├── .env.example
-│   ├── db.js
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── server.js
+│   ├── .env.example              # Safe environment variable template
+│   ├── db.js                     # Configurable PostgreSQL connection pool
+│   ├── package.json              # Express, pg, bcryptjs, jsonwebtoken, dotenv
+│   ├── server.js                 # Express server with fail-secure startup check
+│   ├── test_suite.js             # Offline project verification suite (unit & invariant tests)
+│   ├── middleware/
+│   │   └── auth.js               # JWT verification & role authorization middleware
 │   └── routes/
-│       ├── students.js
-│       ├── marks.js
-│       ├── attendance.js
-│       └── reports.js
+│       ├── auth.js               # Dual-role authentication & token issuance
+│       ├── teachers.js           # Teacher management CRUD & dependency validation
+│       ├── classes.js            # Class CRUD & student count aggregation
+│       ├── subjects.js           # Subject catalog CRUD & assignment check
+│       ├── assignments.js        # Faculty assignment mapping & duplicate prevention
+│       ├── timetable.js          # Timetable schedule & conflict detection
+│       ├── announcements.js      # Announcement publishing & role scoping
+│       ├── teacherDashboard.js   # Scoped endpoints for authenticated teachers
+│       ├── students.js           # Student CRUD (dependency checks on student_subject_marks)
+│       ├── marks.js              # Normalized marks CRUD & teacher assignment authorization
+│       ├── attendance.js         # Subject & general attendance with mutual consistency
+│       └── reports.js            # Reports querying student_reports view with divisor 5.0
 │
 ├── database/
-│   ├── schema.sql
-│   └── queries.sql
+│   ├── schema.sql                # Base canonical schema definition (normalized marks, subject attendance)
+│   ├── queries.sql               # Comprehensive SQL query demonstration script (25 sections)
+│   └── migrations/
+│       ├── 001_safe_schema_extensions.sql              # RBAC & academic entities extension
+│       ├── 002_normalize_marks_and_subject_attendance.sql  # Marks normalization & subject attendance migration
+│       └── rollback_002_migration.sql                  # Data-safe lossless rollback script
 │
 └── docs/
-    └── DB-Design.docx
+    ├── DB-Design.docx            # Original database design document
+    └── screenshots/              # System demonstration screenshots
 ```
 
 ---
@@ -197,452 +243,107 @@ school-managment-system/
 ### Prerequisites
 
 Install:
-
-- Node.js
-- PostgreSQL 18
+- Node.js (v18 or later)
+- PostgreSQL (v15 or later, tested with PostgreSQL 18)
 - Git
-- Visual Studio Code
 
-### 1. Clone the Repository
+### 1. Project Directory
+
+Ensure you are working in your project directory:
 
 ```bash
-git clone https://github.com/karthi-21-glh/School-Managment-System.git
-cd School-Managment-System
+cd school-managment-system-antigravity
 ```
 
-### 2. Create the PostgreSQL Database
+### 2. Configure Environment Variables
 
+Create `backend/.env` based on `backend/.env.example`:
+
+```env
+# Database Configuration
+DB_USER=postgres
+DB_HOST=localhost
+DB_NAME=school_management
+DB_PORT=5432
+DB_PASSWORD=your_actual_postgresql_password
+
+# Server Port
+PORT=5000
+
+# Security (CRITICAL: Required for server to start)
+JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+```
+
+> **Security Note:** The backend fails securely at startup if `JWT_SECRET` is missing. Never commit `.env` into version control.
+
+### 3. Database Migrations
+
+For new setups:
 ```sql
 CREATE DATABASE school_management;
-```
-
-Connect to it:
-
-```sql
 \c school_management
-```
-
-### 3. Create the Schema
-
-Run:
-
-```sql
 \i database/schema.sql
 ```
 
-This creates the tables, constraints, and views.
-
-### 4. Configure Environment Variables
-
-Create `backend/.env`:
-
-```env
-DB_PASSWORD=your_postgresql_password
-PORT=5000
-```
-
-Do not commit the actual `.env` file.
-
-Use `backend/.env.example` as the template.
-
-### 5. Install Dependencies
-
-```bash
-cd backend
-npm install
-```
-
-### 6. Start the Backend
-
-```bash
-node server.js
-```
-
-The backend runs at:
-
-```text
-http://localhost:5000
-```
-
-### 7. Open the Application
-
-Open:
-
-```text
-index.html
-```
-
-The frontend communicates with the Express backend through REST APIs.
-
----
-
-## 7. Usage
-
-### Navigation
-
-```text
-Home | Student ▼ | Student Directory | Marks ▼ | Attendance ▼ | Reports | Exit
-```
-
-### Student Workflow
-
-1. Open **Student → Add Student**.
-2. Enter student information.
-3. Submit the form.
-4. The frontend sends a POST request.
-5. Express inserts the record into PostgreSQL.
-
-### Marks Workflow
-
-1. Open **Marks → Enter Marks**.
-2. Enter the registration number.
-3. Enter examination type.
-4. Enter subject marks.
-5. Submit the form.
-
-### Attendance Workflow
-
-1. Open **Attendance → Add Attendance**.
-2. Enter registration number.
-3. Select date.
-4. Select Present or Absent.
-5. Submit.
-
-### Reports Workflow
-
-1. Open **Reports**.
-2. Enter the registration number.
-3. The system retrieves the student's marks and report information.
-4. Total marks, average, and grade are displayed.
-
----
-
-## 8. Screenshots / Demo
-
-### Login
-
-![Login](docs/screenshots/login.png)
-
-### Dashboard
-
-![Dashboard](docs/screenshots/dashboard.png)
-
-### Student Directory
-
-![Student Directory](docs/screenshots/student_search.png)
-
-### Student Management
-
-![Add Student](docs/screenshots/add_student.png)
-
-### Marks Management
-
-![Marks Management](docs/screenshots/marks.png)
-
-### Academic Report
-
-![Academic Report](docs/screenshots/reports.png)
-
-## 9. API Documentation
-
-### Students
-
-| Method | Endpoint                | Description      |
-| ------ | ----------------------- | ---------------- |
-| GET    | `/api/students`         | Get all students |
-| POST   | `/api/students`         | Add a student    |
-| GET    | `/api/students/:reg_no` | Get a student    |
-| PUT    | `/api/students/:reg_no` | Update a student |
-| DELETE | `/api/students/:reg_no` | Delete a student |
-
-### Marks
-
-| Method | Endpoint              | Description             |
-| ------ | --------------------- | ----------------------- |
-| GET    | `/api/marks`          | Get all marks           |
-| POST   | `/api/marks`          | Add marks               |
-| GET    | `/api/marks/:reg_no`  | Get marks for a student |
-| PUT    | `/api/marks/:mark_id` | Update marks            |
-| DELETE | `/api/marks/:mark_id` | Delete marks            |
-
-### Attendance
-
-| Method | Endpoint                     | Description                  |
-| ------ | ---------------------------- | ---------------------------- |
-| GET    | `/api/attendance`            | Get attendance records       |
-| POST   | `/api/attendance`            | Add attendance               |
-| GET    | `/api/attendance/:reg_no`    | Get attendance for a student |
-| PUT    | `/api/attendance/:attend_id` | Update attendance            |
-| DELETE | `/api/attendance/:attend_id` | Delete attendance            |
-
-### Reports
-
-| Method | Endpoint               | Description               |
-| ------ | ---------------------- | ------------------------- |
-| GET    | `/api/reports`         | Get report records        |
-| GET    | `/api/reports/:reg_no` | Get reports for a student |
-
----
-
-## 10. Engineering Decisions
-
-### PostgreSQL
-
-PostgreSQL was selected because the project requires relational integrity, constraints, joins, aggregation, views, and structured SQL queries.
-
-### REST API
-
-The frontend communicates with PostgreSQL through an Express.js REST API instead of connecting directly to the database.
-
-### Modular Backend
-
-Routes are separated by functionality:
-
-```text
-routes/
-├── students.js
-├── marks.js
-├── attendance.js
-└── reports.js
-```
-
-### Database Constraints
-
-The database uses:
-
-- Primary keys
-- Foreign keys
-- UNIQUE constraints
-- CHECK constraints
-- NOT NULL constraints
-
-### Derived Data
-
-Age is derived from `date_of_birth` through the `student_details` view.
-
-Total marks, average, and grade are derived through the `student_reports` view.
-
-### Database Views
-
-```text
-student_details
-student_reports
-```
-
-### Indexes
-
+For existing databases with legacy data, apply migration `002`:
 ```sql
-idx_student_class
-idx_marks_reg_no
-idx_attendance_reg_no
+\c school_management
+\i database/migrations/002_normalize_marks_and_subject_attendance.sql
 ```
 
-These support common class, student, marks, and attendance lookups.
-
----
-
-## 11. Testing
-
-### Student Testing
-
-- Add student
-- View student
-- Search student
-- Edit student
-- Delete student
-- Class filtering
-
-### Marks Testing
-
-- Enter marks
-- Retrieve marks
-- Edit marks
-- Delete marks
-- Verify subject marks
-- Verify total, average, and grade
-
-### Attendance Testing
-
-- Add attendance
-- Retrieve attendance
-- Edit attendance
-- Delete attendance
-- Test duplicate attendance restriction
-
-### Report Testing
-
-- Retrieve student report
-- Verify subject marks
-- Verify total marks
-- Verify average
-- Verify grade
-
-### Database Testing
-
-- Primary key enforcement
-- Foreign key enforcement
-- Unique constraints
-- Check constraints
-- Duplicate attendance prevention
-- Aggregate queries
-- JOIN queries
-- Subqueries
-- Views
-- Indexes
-
----
-
-## 12. Limitations & Future Improvements
-
-### Current Limitations
-
-- Simple login interface.
-- No full token-based authentication.
-- Role-based access control can be expanded.
-- The current system focuses on students, marks, attendance, and reports.
-- Production/cloud deployment is not included in the current setup.
-
-### Future Improvements
-
-- Secure authentication and authorization
-- Admin, teacher, and student roles
-- Password hashing
-- JWT/session-based authentication
-- Teacher management
-- Class and subject management
-- Parent/student portals
-- Automated report-card PDF generation
-- Email notifications
-- Attendance notifications
-- Advanced dashboard analytics
-- Responsive mobile interface
-- Cloud deployment
-- Database backup and recovery
-- Audit logs
-- Improved validation and error handling
-
----
-
-## Database Design
-
-### Main Entities
-
-```text
-ADMINISTRATOR
-      │
-      │ 1:N
-      ▼
-   STUDENT
-   │  │  │
-   │  │  └────────── 1:N ────── ATTENDANCE
-   │  │
-   │  └───────────── 1:N ────── MARKS
-   │                              │
-   │                              │ 1:N
-   │                              ▼
-   └────────────── 1:N ─────── REPORT
-```
-
-Database views:
-
-```text
-STUDENT_DETAILS  → VIEW
-STUDENT_REPORTS  → VIEW
-```
-
-`Age` is derived from `DateOfBirth`.
-
-`TotalMarks`, `Average`, and `Grade` are derived in `student_reports`.
-
-### Tables
-
-- `administrator`
-- `student`
-- `marks`
-- `attendance`
-- `report`
-
-### Views
-
-- `student_details`
-- `student_reports`
-
-### Important Constraints
-
-```text
-STUDENT
-├── Primary Key: RegNo
-├── Unique: Email
-└── Foreign Key: AdminID
-
-MARKS
-├── Primary Key: MarkID
-├── Foreign Key: RegNo
-└── Marks range: 0–100
-
-ATTENDANCE
-├── Primary Key: AttendID
-├── Foreign Key: RegNo
-└── Unique: (RegNo, AttendanceDate)
-
-REPORT
-├── Primary Key: ReportID
-├── Foreign Key: MarkID
-└── Foreign Key: RegNo
+To revert migration `002` if needed:
+```sql
+\c school_management
+\i database/migrations/rollback_002_migration.sql
 ```
 
 ---
 
-## SQL Query Demonstrations
+## 7. API Documentation
 
-`database/queries.sql` contains examples covering:
+All protected routes require an `Authorization: Bearer <token>` HTTP header.
 
-1. SELECT
-2. WHERE
-3. ILIKE
-4. ORDER BY
-5. INSERT
-6. UPDATE
-7. DELETE
-8. Aggregate functions
-9. GROUP BY
-10. INNER JOIN
-11. LEFT JOIN
-12. Multi-table JOIN
-13. Subqueries
-14. Views
-15. Attendance summaries
-16. Attendance percentages
-17. Multi-condition searches
-18. Marks summaries
-19. Indexes
-20. View definitions
+### Marks (`/api/marks`)
 
-> Some INSERT, UPDATE, and DELETE statements are demonstration/test queries. Do not execute the entire file blindly on a database containing data you want to preserve.
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/api/marks` | Teacher / Admin | List marks (teachers scoped strictly to assigned classes and subjects). |
+| POST | `/api/marks` | Teacher / Admin | Create or update marks (supports normalized single-subject or batch 5-core subjects; verifies teacher assignments). |
+| GET | `/api/marks/:reg_no` | Teacher / Admin | Get marks for a student (scoped to assigned subjects for teachers). |
+| PUT | `/api/marks/:mark_record_id` | Teacher / Admin | Update specific subject mark record (teachers restricted to assigned subjects). |
+| DELETE | `/api/marks/:mark_record_id` | Teacher / Admin | Delete specific subject mark record (teachers restricted to assigned subjects; admin has global access). |
+
+### Attendance (`/api/attendance`)
+
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/api/attendance` | Teacher / Admin | List attendance records (teachers scoped to assigned classes/subjects; supports query filters). |
+| POST | `/api/attendance` | Teacher / Admin | Record attendance (teachers must provide assigned `subject_id`; verifies mutual consistency with timetable; supports General attendance for admin). |
+| GET | `/api/attendance/:reg_no` | Teacher / Admin | Get attendance for a student. |
+| PUT | `/api/attendance/:attend_id` | Teacher / Admin | Update attendance status (teachers restricted to assigned subject attendance). |
+| DELETE | `/api/attendance/:attend_id` | Teacher / Admin | Delete attendance record (teachers can delete assigned subject attendance; General attendance deletable only by admin). |
+
+### Reports (`/api/reports`)
+
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/api/reports` | Teacher / Admin | List student report cards from `student_reports` view. |
+| GET | `/api/reports/:reg_no` | Teacher / Admin | Get report card for a student. |
+| GET | `/api/reports/class-performance/:class_code` | Teacher / Admin | Class academic performance report across 5 core subjects (divisor 5.0). |
+| GET | `/api/reports/class-attendance/:class_code` | Teacher / Admin | Class attendance summary and percentages. |
+| GET | `/api/reports/teacher-workloads` | Admin | Faculty workload metrics. |
 
 ---
 
-### Demo
+## 8. Verification & Test Suite
 
-The frontend can be viewed through GitHub Pages.  
-The complete application requires the Node.js backend and PostgreSQL database to be running locally.
+Run the offline verification suite:
 
-## Project Status
+```bash
+node backend/test_suite.js
+```
 
-- [x] PostgreSQL database
-- [x] Student CRUD
-- [x] Marks CRUD
-- [x] Attendance CRUD
-- [x] Academic reports
-- [x] Dashboard
-- [x] Student Directory
-- [x] PostgreSQL views
-- [x] Database constraints
-- [x] Foreign keys
-- [x] Indexes
-- [x] SQL query demonstrations
-- [x] Backend REST APIs
-- [x] Frontend integration
+Runs 21 unit tests covering bcrypt password cryptography, JWT issuance and expiry, timetable conflict detection, 5-core subject report calculations (divisor 5.0), normalized marks multi-attempt invariants, teacher authorization predicates, attendance partial uniqueness, and canonical report sitting invariants without connecting to any database.
 
 ---
 
@@ -657,9 +358,3 @@ The complete application requires the Node.js backend and PostgreSQL database to
 - Karthikeya S Arun
 - Ganga J
 - Harshita Sanka
-
----
-
-## License
-
-This project was developed as an academic DBMS project.

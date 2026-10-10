@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Delete Student</title>
     <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
     <script>
-      if (sessionStorage.getItem("isLoggedIn") !== "true") {
-        alert("Access Restricted! Please log in first.");
-        window.location.href = "index.html";
-      }
+      SMS_AUTH.requireAuth("admin");
     </script>
   </head>
 
@@ -28,14 +26,19 @@
         <ul>
           <li><a href="dbms_home.html">Home</a></li>
 
-          <li class="dropdown">
+          <li class="dropdown active">
             Student
             <ul class="dropdown-content">
               <li><a href="add_student.html">Add Student</a></li>
               <li><a href="edit_student.html">Edit Student</a></li>
               <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
             </ul>
           </li>
+
+          <li><a href="teachers.html">Teachers</a></li>
+          <li><a href="classes.html">Academics</a></li>
+          <li><a href="timetable.html">Timetable</a></li>
 
           <li class="dropdown">
             Marks
@@ -55,11 +58,10 @@
             </ul>
           </li>
 
-          <li>
-            <a href="reports.html">Reports</a>
-          </li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li><a href="reports.html">Reports</a></li>
 
-          <li onclick="logout()">Exit</li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
         </ul>
       </nav>
     </header>
@@ -116,7 +118,7 @@
         }
 
         try {
-          const response = await fetch(
+          const response = await SMS_AUTH.fetch(
             `http://localhost:5000/api/students/${encodeURIComponent(regno)}`,
           );
 
@@ -171,7 +173,7 @@
           }
 
           try {
-            const response = await fetch(
+            const response = await SMS_AUTH.fetch(
               `http://localhost:5000/api/students/${encodeURIComponent(regno)}`,
               {
                 method: "DELETE",
@@ -198,11 +200,7 @@
         });
 
       function logout() {
-        if (confirm("Do you want to exit?")) {
-          sessionStorage.removeItem("isLoggedIn");
-
-          window.location.href = "index.html";
-        }
+        SMS_AUTH.logout();
       }
     </script>
   </body>

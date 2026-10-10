@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School Management System - Academics & Assignments</title>
+    <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
+    <script>
+      SMS_AUTH.requireAuth("admin");
+    </script>
+    <style>
+      .page-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+      }
+      .nav-tabs {
+        display: flex;
+        gap: 10px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 25px;
+      }
+      .tab-btn {
+        padding: 12px 22px;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: var(--transition);
+      }
+      .tab-btn.active {
+        color: var(--accent-blue);
+        border-bottom-color: var(--accent-blue);
+      }
+      .tab-btn:hover:not(.active) {
+        color: white;
+      }
+      .panel {
+        display: none;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 25px;
+        box-shadow: var(--shadow-lg);
+      }
+      .panel.active {
+        display: block;
+      }
+      .grid-layout {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 30px;
+      }
+      @media (max-width: 900px) {
+        .grid-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      .form-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 20px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+      .form-group input, .form-group select {
+        padding: 10px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: white;
+        font-size: 14px;
+      }
+      .btn-primary {
+        padding: 10px 18px;
+        background: var(--accent-blue);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: var(--transition);
+      }
+      .btn-primary:hover {
+        background: #2563eb;
+      }
+      .btn-sm-danger {
+        padding: 5px 10px;
+        background: var(--accent-rose);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .data-table th, .data-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .data-table th {
+        background: rgba(15, 23, 42, 0.7);
+        color: #93c5fd;
+        font-size: 13px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.4);
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- HEADER -->
+    <header>
+      <div class="logo">
+        <img
+          src="https://i.pinimg.com/1200x/af/85/fd/af85fd005cb098111b85832faf17f00f.jpg"
+          alt="School Logo"
+        />
+      </div>
+
+      <h1>School Management System</h1>
+
+      <nav>
+        <ul>
+          <li><a href="dbms_home.html">Home</a></li>
+          <li class="dropdown">
+            Student
+            <ul class="dropdown-content">
+              <li><a href="add_student.html">Add Student</a></li>
+              <li><a href="edit_student.html">Edit Student</a></li>
+              <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
+            </ul>
+          </li>
+          <li><a href="teachers.html">Teachers</a></li>
+          <li class="active"><a href="classes.html">Academics</a></li>
+          <li><a href="timetable.html">Timetable</a></li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li><a href="reports.html">Reports</a></li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
+        </ul>
+      </nav>
+    </header>
+
+    <div class="page-container">
+      <div style="margin-bottom: 25px;">
+        <h2 style="margin: 0; color: white;">Academic Management</h2>
+        <p style="margin: 4px 0 0; color: var(--text-secondary); font-size: 14px;">
+          Configure classes, subjects, and assign teachers to authorized curriculum.
+        </p>
+      </div>
+
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('classesTab')">Classes</button>
+        <button class="tab-btn" onclick="switchTab('subjectsTab')">Subjects</button>
+        <button class="tab-btn" onclick="switchTab('assignmentsTab')">Teacher Assignments</button>
+      </div>
+
+      <!-- TAB 1: CLASSES -->
+      <div id="classesTab" class="panel active">
+        <div class="grid-layout">
+          <div class="form-card">
+            <h3 style="margin-top: 0; color: white;">Add New Class</h3>
+            <form id="addClassForm" onsubmit="addClass(event)">
+              <div class="form-group">
+                <label>Class Name / Grade *</label>
+                <input type="text" id="classNameInput" placeholder="e.g. 10, 9, 8" required />
+              </div>
+              <div class="form-group">
+                <label>Section *</label>
+                <input type="text" id="sectionInput" placeholder="e.g. A, B, C" required />
+              </div>
+              <div class="form-group">
+                <label>Academic Year</label>
+                <input type="text" id="classYearInput" value="2026-2027" required />
+              </div>
+              <button type="submit" class="btn-primary">+ Add Class</button>
+            </form>
+          </div>
+
+          <div>
+            <h3 style="margin-top: 0; color: white;">Configured Classes</h3>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Class Code</th>
+                  <th>Grade</th>
+                  <th>Section</th>
+                  <th>Academic Year</th>
+                  <th>Enrolled Students</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="classesTableBody">
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading classes...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: SUBJECTS -->
+      <div id="subjectsTab" class="panel">
+        <div class="grid-layout">
+          <div class="form-card">
+            <h3 style="margin-top: 0; color: white;">Add New Subject</h3>
+            <form id="addSubjectForm" onsubmit="addSubject(event)">
+              <div class="form-group">
+                <label>Subject Code *</label>
+                <input type="text" id="subjectCodeInput" placeholder="e.g. MTH103, ENG101" required />
+              </div>
+              <div class="form-group">
+                <label>Subject Name *</label>
+                <input type="text" id="subjectNameInput" placeholder="e.g. Mathematics" required />
+              </div>
+              <div class="form-group">
+                <label>Department / Category</label>
+                <input type="text" id="departmentInput" placeholder="e.g. Science & Mathematics" />
+              </div>
+              <button type="submit" class="btn-primary">+ Add Subject</button>
+            </form>
+          </div>
+
+          <div>
+            <h3 style="margin-top: 0; color: white;">Subject Curriculum</h3>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Subject Code</th>
+                  <th>Subject Name</th>
+                  <th>Department</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="subjectsTableBody">
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading subjects...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: ASSIGNMENTS -->
+      <div id="assignmentsTab" class="panel">
+        <div class="grid-layout">
+          <div class="form-card">
+            <h3 style="margin-top: 0; color: white;">Assign Teacher</h3>
+            <form id="assignTeacherForm" onsubmit="createAssignment(event)">
+              <div class="form-group">
+                <label>Select Teacher *</label>
+                <select id="assignTeacherSelect" required>
+                  <option value="">Choose Teacher</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Select Class *</label>
+                <select id="assignClassSelect" required>
+                  <option value="">Choose Class</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Select Subject *</label>
+                <select id="assignSubjectSelect" required>
+                  <option value="">Choose Subject</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Academic Year</label>
+                <input type="text" id="assignYearInput" value="2026-2027" required />
+              </div>
+
+              <button type="submit" class="btn-primary">+ Assign to Class</button>
+            </form>
+          </div>
+
+          <div>
+            <h3 style="margin-top: 0; color: white;">Current Faculty Assignments</h3>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Teacher</th>
+                  <th>Class</th>
+                  <th>Subject</th>
+                  <th>Year</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="assignmentsTableBody">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading assignments...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+      let classesList = [];
+      let subjectsList = [];
+      let teachersList = [];
+
+      function switchTab(tabId) {
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById(tabId).classList.add("active");
+        event.currentTarget.classList.add("active");
+      }
+
+      async function initAcademics() {
+        await Promise.all([loadClasses(), loadSubjects(), loadTeachersForAssignment()]);
+        loadAssignments();
+      }
+
+      async function loadClasses() {
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/classes");
+          classesList = await res.json();
+          renderClasses();
+          populateClassSelect();
+        } catch (err) {
+          document.getElementById("classesTableBody").innerHTML =
+            `<tr><td colspan="6" style="color: #ef4444; text-align: center;">Error loading classes.</td></tr>`;
+        }
+      }
+
+      function renderClasses() {
+        const tbody = document.getElementById("classesTableBody");
+        if (classesList.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No classes configured.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = classesList.map(c => `
+          <tr>
+            <td><span class="badge">${c.class_code}</span></td>
+            <td>Class ${c.class_name}</td>
+            <td>${c.section}</td>
+            <td>${c.academic_year}</td>
+            <td><b>${c.student_count || 0}</b> students</td>
+            <td style="text-align: right;">
+              <button class="btn-sm-danger" onclick="deleteClass(${c.class_id})">Delete</button>
+            </td>
+          </tr>
+        `).join("");
+      }
+
+      async function addClass(e) {
+        e.preventDefault();
+        const payload = {
+          class_name: document.getElementById("classNameInput").value.trim(),
+          section: document.getElementById("sectionInput").value.trim(),
+          academic_year: document.getElementById("classYearInput").value.trim()
+        };
+
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/classes", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to add class.");
+
+          alert("Class added successfully!");
+          document.getElementById("addClassForm").reset();
+          loadClasses();
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+      }
+
+      async function deleteClass(id) {
+        if (!confirm("Are you sure you want to delete this class?")) return;
+        try {
+          const res = await SMS_AUTH.fetch(`http://localhost:5000/api/classes/${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to delete class.");
+          alert("Class deleted.");
+          loadClasses();
+        } catch (err) {
+          alert("Notice: " + err.message);
+        }
+      }
+
+      async function loadSubjects() {
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/subjects");
+          subjectsList = await res.json();
+          renderSubjects();
+          populateSubjectSelect();
+        } catch (err) {
+          document.getElementById("subjectsTableBody").innerHTML =
+            `<tr><td colspan="4" style="color: #ef4444; text-align: center;">Error loading subjects.</td></tr>`;
+        }
+      }
+
+      function renderSubjects() {
+        const tbody = document.getElementById("subjectsTableBody");
+        if (subjectsList.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No subjects found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = subjectsList.map(s => `
+          <tr>
+            <td><b>${s.subject_code}</b></td>
+            <td style="color: white;">${s.subject_name}</td>
+            <td>${s.department || "General"}</td>
+            <td style="text-align: right;">
+              <button class="btn-sm-danger" onclick="deleteSubject(${s.subject_id})">Delete</button>
+            </td>
+          </tr>
+        `).join("");
+      }
+
+      async function addSubject(e) {
+        e.preventDefault();
+        const payload = {
+          subject_code: document.getElementById("subjectCodeInput").value.trim().toUpperCase(),
+          subject_name: document.getElementById("subjectNameInput").value.trim(),
+          department: document.getElementById("departmentInput").value.trim()
+        };
+
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/subjects", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to add subject.");
+
+          alert("Subject added successfully!");
+          document.getElementById("addSubjectForm").reset();
+          loadSubjects();
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+      }
+
+      async function deleteSubject(id) {
+        if (!confirm("Are you sure you want to delete this subject?")) return;
+        try {
+          const res = await SMS_AUTH.fetch(`http://localhost:5000/api/subjects/${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to delete subject.");
+          alert("Subject deleted.");
+          loadSubjects();
+        } catch (err) {
+          alert("Notice: " + err.message);
+        }
+      }
+
+      async function loadTeachersForAssignment() {
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/teachers?status=Active");
+          teachersList = await res.json();
+          const select = document.getElementById("assignTeacherSelect");
+          select.innerHTML = `<option value="">Choose Teacher</option>` +
+            teachersList.map(t => `<option value="${t.teacher_id}">${t.full_name} (${t.teacher_id})</option>`).join("");
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function populateClassSelect() {
+        const select = document.getElementById("assignClassSelect");
+        select.innerHTML = `<option value="">Choose Class</option>` +
+          classesList.map(c => `<option value="${c.class_id}">${c.class_code}</option>`).join("");
+      }
+
+      function populateSubjectSelect() {
+        const select = document.getElementById("assignSubjectSelect");
+        select.innerHTML = `<option value="">Choose Subject</option>` +
+          subjectsList.map(s => `<option value="${s.subject_id}">${s.subject_name} (${s.subject_code})</option>`).join("");
+      }
+
+      async function loadAssignments() {
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/assignments");
+          const list = await res.json();
+          const tbody = document.getElementById("assignmentsTableBody");
+
+          if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No assignments created yet.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = list.map(a => `
+            <tr>
+              <td><b>${a.teacher_name}</b> <span style="font-size: 11px; color: var(--text-muted);">(${a.teacher_id})</span></td>
+              <td><span class="badge">${a.class_code}</span></td>
+              <td style="color: white;">${a.subject_name}</td>
+              <td>${a.academic_year}</td>
+              <td style="text-align: right;">
+                <button class="btn-sm-danger" onclick="deleteAssignment(${a.assignment_id})">Remove</button>
+              </td>
+            </tr>
+          `).join("");
+        } catch (err) {
+          document.getElementById("assignmentsTableBody").innerHTML =
+            `<tr><td colspan="5" style="color: #ef4444; text-align: center;">Error loading assignments.</td></tr>`;
+        }
+      }
+
+      async function createAssignment(e) {
+        e.preventDefault();
+        const payload = {
+          teacher_id: document.getElementById("assignTeacherSelect").value,
+          class_id: parseInt(document.getElementById("assignClassSelect").value, 10),
+          subject_id: parseInt(document.getElementById("assignSubjectSelect").value, 10),
+          academic_year: document.getElementById("assignYearInput").value.trim()
+        };
+
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/assignments", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to create assignment.");
+
+          alert("Teacher assigned successfully!");
+          loadAssignments();
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+      }
+
+      async function deleteAssignment(id) {
+        if (!confirm("Are you sure you want to remove this assignment?")) return;
+        try {
+          const res = await SMS_AUTH.fetch(`http://localhost:5000/api/assignments/${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to remove assignment.");
+          alert("Assignment removed.");
+          loadAssignments();
+        } catch (err) {
+          alert("Notice: " + err.message);
+        }
+      }
+
+      window.addEventListener("DOMContentLoaded", initAcademics);
+    </script>
+  </body>
+</html>

@@ -2,16 +2,28 @@ require("dotenv").config({
   path: __dirname + "/.env",
 });
 
+// Fail securely at application startup if JWT_SECRET is missing
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === "") {
+  console.error("FATAL ERROR: JWT_SECRET environment variable is missing or empty.");
+  process.exit(1);
+}
+
 const express = require("express");
 const cors = require("cors");
 const pool = require("./db");
+const { verifyToken, requireAdmin, requireTeacherOrAdmin } = require("./middleware/auth");
 
+const authRoutes = require("./routes/auth");
+const teacherRoutes = require("./routes/teachers");
+const classRoutes = require("./routes/classes");
+const subjectRoutes = require("./routes/subjects");
+const assignmentRoutes = require("./routes/assignments");
+const timetableRoutes = require("./routes/timetable");
+const announcementRoutes = require("./routes/announcements");
+const teacherDashboardRoutes = require("./routes/teacherDashboard");
 const studentRoutes = require("./routes/students");
-
 const attendanceRoutes = require("./routes/attendance");
-
 const marksRoutes = require("./routes/marks");
-
 const reportsRoutes = require("./routes/reports");
 
 const app = express();
@@ -20,24 +32,41 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(cors());
+
+// Health check / welcome route
+app.get("/", (req, res) => {
+  res.json({
+    message: "School Management System API is running",
+    status: "healthy",
+  });
+});
+
+// Public authentication routes
+app.use("/api/auth", authRoutes);
+
+// Protected module routes
+app.use("/api/teachers", teacherRoutes);
+app.use("/api/classes", classRoutes);
+app.use("/api/subjects", subjectRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/timetable", timetableRoutes);
+app.use("/api/announcements", announcementRoutes);
+app.use("/api/teacher-dashboard", teacherDashboardRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/marks", marksRoutes);
 app.use("/api/reports", reportsRoutes);
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "School Management System API is running",
-  });
-});
-
-// Dashboard statistics
-app.get("/api/dashboard", async (req, res) => {
+// Dashboard statistics (Administrator only)
+app.get("/api/dashboard", verifyToken, requireAdmin, async (req, res) => {
   try {
     const statsQuery = `
       SELECT
         (SELECT COUNT(*) FROM student) AS total_students,
-        (SELECT COUNT(*) FROM marks) AS total_marks,
+        (SELECT COUNT(*) FROM teacher WHERE status = 'Active') AS total_teachers,
+        (SELECT COUNT(*) FROM classes) AS total_classes,
+        (SELECT COUNT(*) FROM subjects) AS total_subjects,
+        (SELECT COUNT(*) FROM student_subject_marks) AS total_marks,
         (SELECT COUNT(*) FROM attendance) AS total_attendance,
         (
           SELECT COALESCE(ROUND(AVG(average), 2), 0)
@@ -72,10 +101,10 @@ app.get("/api/dashboard", async (req, res) => {
   }
 });
 
-// Attendance percentage report
-app.get("/api/attendance-report", async (req, res) => {
+// Attendance percentage report (Admin and Teachers)
+app.get("/api/attendance-report", verifyToken, requireTeacherOrAdmin, async (req, res) => {
   try {
-    const query = `
+    let query = `
       SELECT
         s.reg_no,
         s.full_name,
@@ -99,6 +128,26 @@ app.get("/api/attendance-report", async (req, res) => {
       FROM student s
       LEFT JOIN attendance a
         ON s.reg_no = a.reg_no
+    `;
+    const params = [];
+
+    if (req.user.role === "teacher") {
+      const authClasses = await pool.query(
+        `SELECT DISTINCT c.class_code 
+         FROM teacher_assignment ta 
+         JOIN classes c ON ta.class_id = c.class_id 
+         WHERE ta.teacher_id = $1`,
+        [req.user.id]
+      );
+      const codes = authClasses.rows.map((r) => r.class_code);
+      if (codes.length === 0) {
+        return res.json([]);
+      }
+      query += ` WHERE UPPER(TRIM(s.class)) = ANY(SELECT UPPER(TRIM(unnest($1::text[]))))`;
+      params.push(codes);
+    }
+
+    query += `
       GROUP BY
         s.reg_no,
         s.full_name,
@@ -106,7 +155,7 @@ app.get("/api/attendance-report", async (req, res) => {
       ORDER BY s.reg_no;
     `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, params);
 
     res.json(result.rows);
   } catch (error) {
@@ -118,8 +167,8 @@ app.get("/api/attendance-report", async (req, res) => {
   }
 });
 
-// Student search and filtering
-app.get("/api/student-search", async (req, res) => {
+// Student search and filtering (Admin and Teachers)
+app.get("/api/student-search", verifyToken, requireTeacherOrAdmin, async (req, res) => {
   try {
     const { reg_no, name, class_name, gender } = req.query;
 
@@ -142,6 +191,24 @@ app.get("/api/student-search", async (req, res) => {
     const values = [];
     let parameterIndex = 1;
 
+    // If teacher, restrict to assigned classes
+    if (req.user.role === "teacher") {
+      const authClasses = await pool.query(
+        `SELECT DISTINCT c.class_code 
+         FROM teacher_assignment ta 
+         JOIN classes c ON ta.class_id = c.class_id 
+         WHERE ta.teacher_id = $1`,
+        [req.user.id]
+      );
+      const codes = authClasses.rows.map((r) => r.class_code);
+      if (codes.length === 0) {
+        return res.json([]);
+      }
+      query += ` AND UPPER(TRIM(class)) = ANY(SELECT UPPER(TRIM(unnest($${parameterIndex}::text[]))))`;
+      values.push(codes);
+      parameterIndex++;
+    }
+
     if (reg_no && reg_no.trim() !== "") {
       query += ` AND reg_no ILIKE $${parameterIndex}`;
       values.push(`%${reg_no.trim()}%`);
@@ -155,7 +222,7 @@ app.get("/api/student-search", async (req, res) => {
     }
 
     if (class_name && class_name.trim() !== "") {
-      query += ` AND class = $${parameterIndex}`;
+      query += ` AND UPPER(TRIM(class)) = UPPER(TRIM($${parameterIndex}))`;
       values.push(class_name.trim());
       parameterIndex++;
     }
@@ -197,6 +264,14 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
+// Centralized error handler
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ message: "An unexpected server error occurred." });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+module.exports = app;

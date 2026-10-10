@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>School Management System - Home Dashboard</title>
     <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
     <script>
-      if (sessionStorage.getItem("isLoggedIn") !== "true") {
-        alert("Access Restricted! Please log in first.");
-        window.location.href = "index.html";
-      }
+      SMS_AUTH.requireAuth("admin");
     </script>
   </head>
   <body>
@@ -34,12 +32,13 @@
               <li><a href="add_student.html">Add Student</a></li>
               <li><a href="edit_student.html">Edit Student</a></li>
               <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
             </ul>
           </li>
 
-          <li>
-            <a href="student_search.html">Student Directory</a>
-          </li>
+          <li><a href="teachers.html">Teachers</a></li>
+          <li><a href="classes.html">Academics</a></li>
+          <li><a href="timetable.html">Timetable</a></li>
 
           <li class="dropdown">
             Marks
@@ -59,11 +58,10 @@
             </ul>
           </li>
 
-          <li>
-            <a href="reports.html">Reports</a>
-          </li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li><a href="reports.html">Reports</a></li>
 
-          <li onclick="logout()">Exit</li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
         </ul>
       </nav>
     </header>
@@ -276,6 +274,90 @@
             </div>
             <div
               id="totalStudents"
+              style="color: #ffffff; font-size: 30px; font-weight: 700"
+            >
+              —
+            </div>
+          </div>
+
+          <!-- Total Teachers -->
+          <div
+            style="
+              background: var(--bg-card);
+              border: 1px solid var(--border-color);
+              border-radius: var(--radius-lg);
+              padding: 25px;
+              box-shadow: var(--shadow-lg);
+            "
+          >
+            <div style="font-size: 28px; margin-bottom: 10px">👩‍🏫</div>
+            <div
+              style="
+                color: var(--text-secondary);
+                font-size: 14px;
+                margin-bottom: 5px;
+              "
+            >
+              Active Teachers
+            </div>
+            <div
+              id="totalTeachers"
+              style="color: #ffffff; font-size: 30px; font-weight: 700"
+            >
+              —
+            </div>
+          </div>
+
+          <!-- Total Classes -->
+          <div
+            style="
+              background: var(--bg-card);
+              border: 1px solid var(--border-color);
+              border-radius: var(--radius-lg);
+              padding: 25px;
+              box-shadow: var(--shadow-lg);
+            "
+          >
+            <div style="font-size: 28px; margin-bottom: 10px">🏫</div>
+            <div
+              style="
+                color: var(--text-secondary);
+                font-size: 14px;
+                margin-bottom: 5px;
+              "
+            >
+              Total Classes
+            </div>
+            <div
+              id="totalClasses"
+              style="color: #ffffff; font-size: 30px; font-weight: 700"
+            >
+              —
+            </div>
+          </div>
+
+          <!-- Total Subjects -->
+          <div
+            style="
+              background: var(--bg-card);
+              border: 1px solid var(--border-color);
+              border-radius: var(--radius-lg);
+              padding: 25px;
+              box-shadow: var(--shadow-lg);
+            "
+          >
+            <div style="font-size: 28px; margin-bottom: 10px">📚</div>
+            <div
+              style="
+                color: var(--text-secondary);
+                font-size: 14px;
+                margin-bottom: 5px;
+              "
+            >
+              Total Subjects
+            </div>
+            <div
+              id="totalSubjects"
               style="color: #ffffff; font-size: 30px; font-weight: 700"
             >
               —
@@ -701,7 +783,7 @@
 
       async function loadStudentsForSearch() {
         try {
-          const response = await fetch("http://localhost:5000/api/students");
+          const response = await SMS_AUTH.fetch("http://localhost:5000/api/students");
 
           if (!response.ok) {
             throw new Error("Failed to load students");
@@ -764,16 +846,13 @@
 
       // Logout function
       function logout() {
-        if (confirm("Do you want to exit?")) {
-          sessionStorage.removeItem("isLoggedIn");
-          window.location.href = "index.html";
-        }
+        SMS_AUTH.logout();
       }
 
       // Load dashboard statistics from PostgreSQL
       async function loadDashboardStatistics() {
         try {
-          const response = await fetch("http://localhost:5000/api/dashboard");
+          const response = await SMS_AUTH.fetch("http://localhost:5000/api/dashboard");
 
           if (!response.ok) {
             throw new Error("Failed to load dashboard statistics");
@@ -785,6 +864,21 @@
 
           document.getElementById("totalStudents").textContent =
             stats.total_students;
+
+          if (document.getElementById("totalTeachers")) {
+            document.getElementById("totalTeachers").textContent =
+              stats.total_teachers || 0;
+          }
+
+          if (document.getElementById("totalClasses")) {
+            document.getElementById("totalClasses").textContent =
+              stats.total_classes || 0;
+          }
+
+          if (document.getElementById("totalSubjects")) {
+            document.getElementById("totalSubjects").textContent =
+              stats.total_subjects || 0;
+          }
 
           document.getElementById("totalMarks").textContent = stats.total_marks;
 

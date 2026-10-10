@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Add Attendance</title>
     <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
     <script>
-      if (sessionStorage.getItem("isLoggedIn") !== "true") {
-        alert("Access Restricted! Please log in first.");
-        window.location.href = "index.html";
-      }
+      SMS_AUTH.requireAuth();
     </script>
   </head>
 
@@ -34,8 +32,13 @@
               <li><a href="add_student.html">Add Student</a></li>
               <li><a href="edit_student.html">Edit Student</a></li>
               <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
             </ul>
           </li>
+
+          <li><a href="teachers.html">Teachers</a></li>
+          <li><a href="classes.html">Academics</a></li>
+          <li><a href="timetable.html">Timetable</a></li>
 
           <li class="dropdown">
             Marks
@@ -46,7 +49,7 @@
             </ul>
           </li>
 
-          <li class="dropdown">
+          <li class="dropdown active">
             Attendance
             <ul class="dropdown-content">
               <li><a href="add_attendance.html">Add Attendance</a></li>
@@ -55,11 +58,10 @@
             </ul>
           </li>
 
-          <li>
-            <a href="reports.html">Reports</a>
-          </li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li><a href="reports.html">Reports</a></li>
 
-          <li onclick="logout()">Exit</li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
         </ul>
       </nav>
     </header>
@@ -69,10 +71,15 @@
 
       <form id="attendanceForm">
         <label>Registration Number</label>
-        <input type="text" id="regno" placeholder="Enter registration number" />
+        <input type="text" id="regno" placeholder="Enter registration number (e.g. STU001)" />
 
         <label>Student Name</label>
         <input type="text" id="name" placeholder="Enter student name" />
+
+        <label>Subject</label>
+        <select id="subject">
+          <option value="">Loading subjects...</option>
+        </select>
 
         <label>Date</label>
         <input type="date" id="date" required />
@@ -91,11 +98,39 @@
     <script>
       let selectedStudent = null;
 
+      // Load subjects on page mount
+      async function loadSubjects() {
+        const subSelect = document.getElementById("subject");
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/subjects");
+          const subjects = await res.json();
+          const isAdmin = SMS_AUTH.isAdmin();
+
+          let html = "";
+          if (isAdmin) {
+            html += `<option value="">General Attendance (Full Day)</option>`;
+          } else {
+            html += `<option value="">Select Subject</option>`;
+          }
+
+          subjects
+            .filter((s) => s.subject_code !== "OTH106")
+            .forEach((s) => {
+              html += `<option value="${s.subject_id}">${s.subject_name} (${s.subject_code})</option>`;
+            });
+
+          subSelect.innerHTML = html;
+        } catch (err) {
+          console.error("Failed to load subjects:", err);
+          subSelect.innerHTML = `<option value="">Default Subject</option>`;
+        }
+      }
+      loadSubjects();
+
       async function findStudent() {
         const regno = document.getElementById("regno").value.trim();
         const name = document.getElementById("name").value.trim();
 
-        // At least one of the two must be entered
         if (!regno && !name) {
           alert("Please enter either Registration Number or Student Name.");
           return null;
@@ -104,75 +139,42 @@
         try {
           let student = null;
 
-          // --------------------------------
-          // OPTION 1: Search by Registration Number
-          // --------------------------------
           if (regno) {
-            const response = await fetch(
-              `http://localhost:5000/api/students/${encodeURIComponent(regno)}`,
+            const response = await SMS_AUTH.fetch(
+              `http://localhost:5000/api/students/${encodeURIComponent(regno)}`
             );
-
             const data = await response.json();
-
             if (!response.ok) {
-              throw new Error(
-                data.error || data.message || "Student not found",
-              );
+              throw new Error(data.error || data.message || "Student not found");
             }
-
             student = data;
-          }
-
-          // --------------------------------
-          // OPTION 2: Search by Student Name
-          // --------------------------------
-          else if (name) {
-            const response = await fetch("http://localhost:5000/api/students");
-
+          } else if (name) {
+            const response = await SMS_AUTH.fetch("http://localhost:5000/api/students");
             const students = await response.json();
-
             if (!response.ok || !Array.isArray(students)) {
               throw new Error("Unable to retrieve students.");
             }
-
             const matches = students.filter(
-              (s) =>
-                s.full_name && s.full_name.toLowerCase() === name.toLowerCase(),
+              (s) => s.full_name && s.full_name.toLowerCase() === name.toLowerCase()
             );
-
             if (matches.length === 0) {
               throw new Error("Student with this name was not found.");
             }
-
             if (matches.length > 1) {
-              alert(
-                "Multiple students have this name. Please use the Registration Number.",
-              );
+              alert("Multiple students have this name. Please use the Registration Number.");
               return null;
             }
-
             student = matches[0];
           }
 
-          // --------------------------------
-          // Student found
-          // --------------------------------
-
           selectedStudent = student;
-
-          // Fill both fields
           document.getElementById("regno").value = student.reg_no || "";
-
           document.getElementById("name").value = student.full_name || "";
-
           return student;
         } catch (error) {
           console.error("Error finding student:", error);
-
           alert("Failed to find student: " + error.message);
-
           selectedStudent = null;
-
           return null;
         }
       }
@@ -183,69 +185,63 @@
           e.preventDefault();
 
           const attendance_date = document.getElementById("date").value;
-
           const status = document.getElementById("status").value;
+          const subject_id = document.getElementById("subject").value;
 
           if (!attendance_date || !status) {
             alert("Please fill in the Date and Status.");
             return;
           }
 
-          // Find the student using either field
-          const student = await findStudent();
+          if (SMS_AUTH.isTeacher() && !subject_id) {
+            alert("Teachers must select a subject to record attendance.");
+            return;
+          }
 
+          const student = await findStudent();
           if (!student) {
             return;
           }
 
           const attendance = {
             reg_no: student.reg_no,
-
             attendance_date: attendance_date,
-
             status: status,
+            subject_id: subject_id ? Number(subject_id) : null,
           };
 
           try {
-            const response = await fetch(
+            const response = await SMS_AUTH.fetch(
               "http://localhost:5000/api/attendance",
               {
                 method: "POST",
-
                 headers: {
                   "Content-Type": "application/json",
                 },
-
                 body: JSON.stringify(attendance),
-              },
+              }
             );
 
             const data = await response.json();
 
             if (!response.ok) {
               throw new Error(
-                data.error || data.message || "Failed to save attendance",
+                data.error || data.message || "Failed to save attendance"
               );
             }
 
             alert("Attendance Added Successfully!");
-
             this.reset();
-
             selectedStudent = null;
+            loadSubjects();
           } catch (error) {
             console.error("Error adding attendance:", error);
-
             alert("Failed to add attendance: " + error.message);
           }
         });
 
       function logout() {
-        if (confirm("Do you want to exit?")) {
-          sessionStorage.removeItem("isLoggedIn");
-
-          window.location.href = "index.html";
-        }
+        SMS_AUTH.logout();
       }
     </script>
   </body>

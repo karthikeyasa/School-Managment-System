@@ -1,19 +1,107 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Student Report</title>
+    <title>School Management System - Academic Reports</title>
     <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
     <script>
-      if (sessionStorage.getItem("isLoggedIn") !== "true") {
-        alert("Access Restricted! Please log in first.");
-        window.location.href = "index.html";
-      }
+      SMS_AUTH.requireAuth();
     </script>
+    <style>
+      .page-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+      }
+      .report-tabs {
+        display: flex;
+        gap: 10px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 25px;
+        overflow-x: auto;
+      }
+      .tab-btn {
+        padding: 12px 20px;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: var(--transition);
+        white-space: nowrap;
+      }
+      .tab-btn.active {
+        color: var(--accent-blue);
+        border-bottom-color: var(--accent-blue);
+      }
+      .tab-btn:hover:not(.active) {
+        color: white;
+      }
+      .panel {
+        display: none;
+      }
+      .panel.active {
+        display: block;
+      }
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }
+      .data-table th, .data-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .data-table th {
+        background: rgba(15, 23, 42, 0.7);
+        color: #93c5fd;
+        font-size: 13px;
+      }
+      .filter-inline {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .filter-inline select {
+        padding: 10px 14px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: white;
+        font-size: 14px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.4);
+      }
+      .badge-grade {
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+      }
+    </style>
   </head>
 
   <body>
+    <!-- HEADER -->
     <header>
       <div class="logo">
         <img
@@ -27,16 +115,18 @@
       <nav>
         <ul>
           <li><a href="dbms_home.html">Home</a></li>
-
           <li class="dropdown">
             Student
             <ul class="dropdown-content">
               <li><a href="add_student.html">Add Student</a></li>
               <li><a href="edit_student.html">Edit Student</a></li>
               <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
             </ul>
           </li>
-
+          <li><a href="teachers.html">Teachers</a></li>
+          <li><a href="classes.html">Academics</a></li>
+          <li><a href="timetable.html">Timetable</a></li>
           <li class="dropdown">
             Marks
             <ul class="dropdown-content">
@@ -45,7 +135,6 @@
               <li><a href="delete_marks.html">Delete Marks</a></li>
             </ul>
           </li>
-
           <li class="dropdown">
             Attendance
             <ul class="dropdown-content">
@@ -54,107 +143,231 @@
               <li><a href="delete_attendance.html">Delete Attendance</a></li>
             </ul>
           </li>
-
-          <li class="active">
-            <a href="reports.html">Reports</a>
-          </li>
-
-          <li onclick="logout()">Exit</li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li class="active"><a href="reports.html">Reports</a></li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
         </ul>
       </nav>
     </header>
 
-    <div class="report-container">
-      <h2>STUDENT REPORT</h2>
-
-      <div class="search">
-        <input type="text" id="regno" placeholder="Enter Registration Number" />
-        <button onclick="generateReport()">Search</button>
+    <div class="page-container">
+      <div style="margin-bottom: 25px;">
+        <h2 style="margin: 0; color: white;">Comprehensive Academic Reports</h2>
+        <p style="margin: 4px 0 0; color: var(--text-secondary); font-size: 14px;">
+          View individual student grade cards, class-wide performance metrics, attendance summaries, and faculty workloads.
+        </p>
       </div>
 
-      <div id="report">
-        <h3>Student Details</h3>
+      <div class="report-tabs">
+        <button class="tab-btn active" onclick="switchReportTab('individualTab')">Individual Student Report</button>
+        <button class="tab-btn" onclick="switchReportTab('classPerfTab')">Class-Wise Performance</button>
+        <button class="tab-btn" onclick="switchReportTab('classAttTab')">Class Attendance Summary</button>
+        <button class="tab-btn" onclick="switchReportTab('teacherWorkTab')">Teacher Workloads</button>
+      </div>
 
-        <p><b>Registration No :</b> <span id="rno"></span></p>
-        <p><b>Name :</b> <span id="name"></span></p>
-        <p><b>Class :</b> <span id="class"></span></p>
-        <p><b>Gender :</b> <span id="gender"></span></p>
+      <!-- TAB 1: INDIVIDUAL STUDENT REPORT (Preserved Original Functionality) -->
+      <div id="individualTab" class="panel active">
+        <div class="report-container" style="max-width: 100%; margin: 0;">
+          <h2>STUDENT REPORT</h2>
 
-        <table>
-          <tr>
-            <th>Subject</th>
-            <th>Marks</th>
-          </tr>
+          <div class="search">
+            <input type="text" id="regno" placeholder="Enter Registration Number (e.g. STU001)" />
+            <button onclick="generateReport()">Search</button>
+          </div>
 
-          <tr>
-            <td>First Language</td>
-            <td id="fl"></td>
-          </tr>
+          <div id="report">
+            <h3>Student Details</h3>
 
-          <tr>
-            <td>Second Language</td>
-            <td id="sl"></td>
-          </tr>
+            <p><b>Registration No :</b> <span id="rno"></span></p>
+            <p><b>Name :</b> <span id="name"></span></p>
+            <p><b>Class :</b> <span id="class"></span></p>
+            <p><b>Gender :</b> <span id="gender"></span></p>
 
-          <tr>
-            <td>Mathematics</td>
-            <td id="maths"></td>
-          </tr>
+            <table>
+              <tr>
+                <th>Subject</th>
+                <th>Marks</th>
+              </tr>
 
-          <tr>
-            <td>Science</td>
-            <td id="science"></td>
-          </tr>
+              <tr>
+                <td>First Language</td>
+                <td id="fl"></td>
+              </tr>
 
-          <tr>
-            <td>Arts</td>
-            <td id="arts"></td>
-          </tr>
+              <tr>
+                <td>Second Language</td>
+                <td id="sl"></td>
+              </tr>
 
-          <tr>
-            <td>Other (If Any)</td>
-            <td id="other"></td>
-          </tr>
-        </table>
+              <tr>
+                <td>Mathematics</td>
+                <td id="maths"></td>
+              </tr>
 
-        <h3>Total : <span id="total"></span></h3>
+              <tr>
+                <td>Science</td>
+                <td id="science"></td>
+              </tr>
 
-        <h3>Average : <span id="average"></span></h3>
+              <tr>
+                <td>Arts</td>
+                <td id="arts"></td>
+              </tr>
+            </table>
 
-        <h3>Grade : <span id="grade"></span></h3>
+            <div class="summary">
+              <h3>Performance Summary</h3>
 
-        <button onclick="window.print()">Print Report</button>
+              <p><b>Total Marks :</b> <span id="total"></span></p>
+              <p><b>Average Marks :</b> <span id="average"></span></p>
+              <p><b>Grade :</b> <span id="grade"></span></p>
+            </div>
 
-        <!-- ATTENDANCE REPORT -->
-        <div
-          style="
-            margin-top: 35px;
-            padding-top: 25px;
-            border-top: 1px solid var(--border-color);
-          "
-        >
-          <h3>Attendance Report</h3>
+            <div class="summary">
+              <h3>Attendance Summary</h3>
 
-          <table>
-            <tr>
-              <th>Total Days</th>
-              <th>Present</th>
-              <th>Absent</th>
-              <th>Attendance Percentage</th>
-            </tr>
+              <table>
+                <tr>
+                  <th>Total Days</th>
+                  <th>Present</th>
+                  <th>Absent</th>
+                  <th>Percentage</th>
+                </tr>
 
-            <tr>
-              <td id="totalDays">-</td>
-              <td id="presentDays">-</td>
-              <td id="absentDays">-</td>
-              <td id="attendancePercentage">-</td>
-            </tr>
+                <tr>
+                  <td id="totalDays">-</td>
+                  <td id="presentDays">-</td>
+                  <td id="absentDays">-</td>
+                  <td id="attendancePercentage">-</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: CLASS-WISE PERFORMANCE REPORT -->
+      <div id="classPerfTab" class="panel">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-lg);">
+          <h3 style="margin-top: 0; color: white;">Class-Wise Academic Performance</h3>
+          <div class="filter-inline">
+            <label>Select Class:</label>
+            <select id="classPerfSelect" onchange="loadClassPerformance(this.value)">
+              <option value="">Choose Class</option>
+            </select>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Reg No</th>
+                <th>Student Name</th>
+                <th>Class</th>
+                <th>Exam</th>
+                <th>FL</th>
+                <th>SL</th>
+                <th>Math</th>
+                <th>Sci</th>
+                <th>Arts</th>
+                <th>Total</th>
+                <th>Avg</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody id="classPerfBody">
+              <tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 25px;">Select a class above to generate report.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: CLASS ATTENDANCE SUMMARY -->
+      <div id="classAttTab" class="panel">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-lg);">
+          <h3 style="margin-top: 0; color: white;">Class Attendance Summary</h3>
+          <div class="filter-inline">
+            <label>Select Class:</label>
+            <select id="classAttSelect" onchange="loadClassAttendance(this.value)">
+              <option value="">Choose Class</option>
+            </select>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Reg No</th>
+                <th>Student Name</th>
+                <th>Class</th>
+                <th>Total Days</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Attendance %</th>
+              </tr>
+            </thead>
+            <tbody id="classAttBody">
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 25px;">Select a class above to view attendance metrics.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: TEACHER WORKLOADS REPORT -->
+      <div id="teacherWorkTab" class="panel">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-lg);">
+          <h3 style="margin-top: 0; color: white;">Faculty Workloads & Subject Assignments</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Teacher ID</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Specialization</th>
+                <th>Classes Taught</th>
+                <th>Subjects Taught</th>
+                <th>Total Assignments</th>
+                <th>Weekly Timetable Periods</th>
+              </tr>
+            </thead>
+            <tbody id="teacherWorkBody">
+              <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">Loading teacher workload report...</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
     </div>
 
+    <!-- SCRIPT -->
     <script>
+      function switchReportTab(tabId) {
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById(tabId).classList.add("active");
+        event.currentTarget.classList.add("active");
+
+        if (tabId === "teacherWorkTab") {
+          loadTeacherWorkloads();
+        }
+      }
+
+      async function initReportsPage() {
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/classes");
+          const classes = await res.json();
+          const pSelect = document.getElementById("classPerfSelect");
+          const aSelect = document.getElementById("classAttSelect");
+
+          classes.forEach(c => {
+            pSelect.innerHTML += `<option value="${c.class_code}">${c.class_code}</option>`;
+            aSelect.innerHTML += `<option value="${c.class_code}">${c.class_code}</option>`;
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      // ------------------------------------
+      // Original Individual Report Function
+      // ------------------------------------
       async function generateReport() {
         const reg = document.getElementById("regno").value.trim();
 
@@ -164,171 +377,81 @@
         }
 
         try {
-          // ------------------------------------
-          // Get student details from PostgreSQL
-          // ------------------------------------
-
-          const studentResponse = await fetch(
-            `http://localhost:5000/api/students/${encodeURIComponent(reg)}`,
+          const studentResponse = await SMS_AUTH.fetch(
+            `http://localhost:5000/api/students/${encodeURIComponent(reg)}`
           );
 
           const studentData = await studentResponse.json();
-
           if (!studentResponse.ok) {
-            throw new Error(
-              studentData.error || studentData.message || "Student not found",
-            );
+            throw new Error(studentData.error || studentData.message || "Student not found");
           }
 
-          // ------------------------------------
-          // Get marks from PostgreSQL
-          // ------------------------------------
-
-          const marksResponse = await fetch(
-            `http://localhost:5000/api/marks/${encodeURIComponent(reg)}`,
+          const marksResponse = await SMS_AUTH.fetch(
+            `http://localhost:5000/api/marks/${encodeURIComponent(reg)}`
           );
 
           const marksData = await marksResponse.json();
-
-          if (!marksResponse.ok) {
-            throw new Error(
-              marksData.error || marksData.message || "Marks not found",
-            );
-          }
-
-          if (!Array.isArray(marksData) || marksData.length === 0) {
-            alert("Marks not found for this student.");
+          if (!marksResponse.ok || !Array.isArray(marksData) || marksData.length === 0) {
+            alert("No marks found for this student.");
             return;
           }
 
-          // ------------------------------------
-          // Get calculated report information
-          // ------------------------------------
-
-          const reportResponse = await fetch(
-            `http://localhost:5000/api/reports/${encodeURIComponent(reg)}`,
+          const reportResponse = await SMS_AUTH.fetch(
+            `http://localhost:5000/api/reports/${encodeURIComponent(reg)}`
           );
 
           const reportData = await reportResponse.json();
 
-          if (!reportResponse.ok) {
-            throw new Error(
-              reportData.error || reportData.message || "Report not found",
-            );
-          }
-
-          // ------------------------------------
-          // Get attendance report from PostgreSQL
-          // ------------------------------------
-
-          const attendanceResponse = await fetch(
-            "http://localhost:5000/api/attendance-report",
+          const attendanceResponse = await SMS_AUTH.fetch(
+            "http://localhost:5000/api/attendance-report"
           );
 
           const attendanceData = await attendanceResponse.json();
-
-          if (!attendanceResponse.ok) {
-            throw new Error(
-              attendanceData.error ||
-                attendanceData.message ||
-                "Attendance report not found",
-            );
-          }
-
-          const attendanceReport = attendanceData.find(
-            (student) => student.reg_no === reg,
-          );
-
-          // ------------------------------------
-          // Use the first marks record
-          // ------------------------------------
+          const attendanceReport = Array.isArray(attendanceData)
+            ? attendanceData.find(s => s.reg_no === reg)
+            : null;
 
           const mark = marksData[0];
-
-          // reportData may be an array because
-          // a student can have multiple exams
-
           const report = Array.isArray(reportData)
-            ? reportData.find((r) => r.mark_id === mark.mark_id) ||
-              reportData[0]
+            ? (reportData.find(r => r.mark_id === mark.mark_id) || reportData[0])
             : reportData;
 
-          // ------------------------------------
           // Display student details
-          // ------------------------------------
-
           document.getElementById("rno").textContent = studentData.reg_no || "";
+          document.getElementById("name").textContent = studentData.full_name || "";
+          document.getElementById("class").textContent = studentData.class || "";
+          document.getElementById("gender").textContent = studentData.gender || "";
 
-          document.getElementById("name").textContent =
-            studentData.full_name || "";
-
-          document.getElementById("class").textContent =
-            studentData.class || "";
-
-          document.getElementById("gender").textContent =
-            studentData.gender || "";
-
-          // ------------------------------------
           // Display marks
-          // ------------------------------------
-
           const fl = mark.first_language ?? 0;
           const sl = mark.second_language ?? 0;
           const ma = mark.mathematics ?? 0;
           const sc = mark.science ?? 0;
           const ar = mark.arts ?? 0;
-          const ot = mark.others ?? 0;
 
           document.getElementById("fl").textContent = fl;
           document.getElementById("sl").textContent = sl;
           document.getElementById("maths").textContent = ma;
           document.getElementById("science").textContent = sc;
           document.getElementById("arts").textContent = ar;
-          document.getElementById("other").textContent = ot;
 
-          // ------------------------------------
-          // Display calculated report values
-          // ------------------------------------
-
-          const total =
-            report.total_marks ??
-            Number(fl) +
-              Number(sl) +
-              Number(ma) +
-              Number(sc) +
-              Number(ar) +
-              Number(ot);
-
-          const average = report.average ?? (Number(total) / 6).toFixed(2);
-
-          const grade = report.grade || "";
+          // Calculated values (5 core subjects, divisor 5.0)
+          const total = report && report.total_marks !== undefined ? report.total_marks : (Number(fl) + Number(sl) + Number(ma) + Number(sc) + Number(ar));
+          const average = report && report.average !== undefined ? report.average : (Number(total) / 5).toFixed(2);
+          const grade = report && report.grade ? report.grade : "N/A";
 
           document.getElementById("total").textContent = total;
-
-          document.getElementById("average").textContent =
-            Number(average).toFixed(2);
-
+          document.getElementById("average").textContent = Number(average).toFixed(2);
           document.getElementById("grade").textContent = grade;
 
-          // ------------------------------------
-          // Display attendance report
-          // ------------------------------------
-
+          // Display attendance
           if (attendanceReport) {
-            document.getElementById("totalDays").textContent =
-              attendanceReport.total_days;
-
-            document.getElementById("presentDays").textContent =
-              attendanceReport.present_days;
-
-            document.getElementById("absentDays").textContent =
-              attendanceReport.absent_days;
-
+            document.getElementById("totalDays").textContent = attendanceReport.total_days;
+            document.getElementById("presentDays").textContent = attendanceReport.present_days;
+            document.getElementById("absentDays").textContent = attendanceReport.absent_days;
             document.getElementById("attendancePercentage").textContent =
               attendanceReport.attendance_percentage !== null
-                ? `${Number(attendanceReport.attendance_percentage).toFixed(
-                    2,
-                  )}%`
+                ? `${Number(attendanceReport.attendance_percentage).toFixed(2)}%`
                 : "N/A";
           } else {
             document.getElementById("totalDays").textContent = "0";
@@ -337,21 +460,121 @@
             document.getElementById("attendancePercentage").textContent = "N/A";
           }
 
+          document.getElementById("report").style.display = "block";
           alert("Report generated successfully!");
         } catch (error) {
           console.error("Error generating report:", error);
-
           alert("Failed to generate report: " + error.message);
         }
       }
 
-      function logout() {
-        if (confirm("Do you want to exit?")) {
-          sessionStorage.removeItem("isLoggedIn");
+      // ------------------------------------
+      // Class Performance Report
+      // ------------------------------------
+      async function loadClassPerformance(classCode) {
+        const tbody = document.getElementById("classPerfBody");
+        if (!classCode) {
+          tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 25px;">Select a class above to generate report.</td></tr>`;
+          return;
+        }
 
-          window.location.href = "index.html";
+        try {
+          const res = await SMS_AUTH.fetch(`http://localhost:5000/api/reports/class-performance/${encodeURIComponent(classCode)}`);
+          const list = await res.json();
+
+          if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 25px;">No marks recorded for Class ${classCode}.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = list.map(r => `
+            <tr>
+              <td><b>${r.reg_no}</b></td>
+              <td>${r.full_name}</td>
+              <td><span class="badge">${r.class}</span></td>
+              <td>${r.exam_type}</td>
+              <td>${r.first_language}</td>
+              <td>${r.second_language}</td>
+              <td>${r.mathematics}</td>
+              <td>${r.science}</td>
+              <td>${r.arts}</td>
+              <td><b>${r.total_marks}</b></td>
+              <td>${Number(r.average).toFixed(2)}</td>
+              <td><span class="badge-grade">${r.grade}</span></td>
+            </tr>
+          `).join("");
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="12" style="color: #ef4444; text-align: center;">Error: ${err.message}</td></tr>`;
         }
       }
+
+      // ------------------------------------
+      // Class Attendance Report
+      // ------------------------------------
+      async function loadClassAttendance(classCode) {
+        const tbody = document.getElementById("classAttBody");
+        if (!classCode) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 25px;">Select a class above to view attendance metrics.</td></tr>`;
+          return;
+        }
+
+        try {
+          const res = await SMS_AUTH.fetch(`http://localhost:5000/api/reports/class-attendance/${encodeURIComponent(classCode)}`);
+          const list = await res.json();
+
+          if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 25px;">No attendance records found for Class ${classCode}.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = list.map(r => `
+            <tr>
+              <td><b>${r.reg_no}</b></td>
+              <td>${r.full_name}</td>
+              <td><span class="badge">${r.class}</span></td>
+              <td>${r.total_days}</td>
+              <td style="color: #34d399;">${r.present_days}</td>
+              <td style="color: #fb7185;">${r.absent_days}</td>
+              <td><b>${r.attendance_percentage !== null ? Number(r.attendance_percentage).toFixed(2) + '%' : 'N/A'}</b></td>
+            </tr>
+          `).join("");
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="7" style="color: #ef4444; text-align: center;">Error: ${err.message}</td></tr>`;
+        }
+      }
+
+      // ------------------------------------
+      // Teacher Workloads Report
+      // ------------------------------------
+      async function loadTeacherWorkloads() {
+        const tbody = document.getElementById("teacherWorkBody");
+        try {
+          const res = await SMS_AUTH.fetch("http://localhost:5000/api/reports/teacher-workloads");
+          const list = await res.json();
+
+          if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">No active faculty records found.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = list.map(t => `
+            <tr>
+              <td><b>${t.teacher_id}</b></td>
+              <td style="color: white;">${t.full_name}</td>
+              <td>${t.email}</td>
+              <td>${t.specialization || "General"}</td>
+              <td><b>${t.total_classes_taught}</b></td>
+              <td><b>${t.total_subjects_taught}</b></td>
+              <td><span class="badge">${t.total_assignments} assignments</span></td>
+              <td><b>${t.weekly_periods}</b> periods/week</td>
+            </tr>
+          `).join("");
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="8" style="color: #ef4444; text-align: center;">Error: ${err.message}</td></tr>`;
+        }
+      }
+
+      window.addEventListener("DOMContentLoaded", initReportsPage);
     </script>
   </body>
 </html>

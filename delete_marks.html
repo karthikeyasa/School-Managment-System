@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Delete Marks</title>
     <link rel="stylesheet" href="dbms.css" />
+    <script src="auth.js"></script>
     <script>
-      if (sessionStorage.getItem("isLoggedIn") !== "true") {
-        alert("Access Restricted! Please log in first.");
-        window.location.href = "index.html";
-      }
+      SMS_AUTH.requireAuth();
     </script>
   </head>
 
@@ -34,10 +32,15 @@
               <li><a href="add_student.html">Add Student</a></li>
               <li><a href="edit_student.html">Edit Student</a></li>
               <li><a href="delete_student.html">Delete Student</a></li>
+              <li><a href="student_search.html">Student Directory</a></li>
             </ul>
           </li>
 
-          <li class="dropdown">
+          <li><a href="teachers.html">Teachers</a></li>
+          <li><a href="classes.html">Academics</a></li>
+          <li><a href="timetable.html">Timetable</a></li>
+
+          <li class="dropdown active">
             Marks
             <ul class="dropdown-content">
               <li><a href="enter_marks.html">Enter Marks</a></li>
@@ -55,11 +58,10 @@
             </ul>
           </li>
 
-          <li>
-            <a href="reports.html">Reports</a>
-          </li>
+          <li><a href="announcements.html">Announcements</a></li>
+          <li><a href="reports.html">Reports</a></li>
 
-          <li onclick="logout()">Exit</li>
+          <li onclick="SMS_AUTH.logout()">Exit</li>
         </ul>
       </nav>
     </header>
@@ -69,7 +71,7 @@
 
       <form id="deleteMarksForm">
         <label>Registration Number</label>
-        <input type="text" id="regno" required />
+        <input type="text" id="regno" required placeholder="e.g. STU001" />
 
         <label>Exam</label>
         <select id="exam">
@@ -97,19 +99,15 @@
         <label>Arts</label>
         <input type="number" id="arts" readonly />
 
-        <label>Other (if any)</label>
-        <input type="number" id="other" readonly />
-
         <button type="submit">Delete Marks</button>
       </form>
     </div>
 
     <script>
-      let currentMarkId = null;
+      let currentMarkRecords = [];
 
       async function getMarks() {
         const regno = document.getElementById("regno").value.trim();
-
         const exam = document.getElementById("exam").value;
 
         if (!regno) {
@@ -118,15 +116,15 @@
         }
 
         try {
-          const response = await fetch(
-            `http://localhost:5000/api/marks/${encodeURIComponent(regno)}`,
+          const response = await SMS_AUTH.fetch(
+            `http://localhost:5000/api/marks/${encodeURIComponent(regno)}`
           );
 
           const data = await response.json();
 
           if (!response.ok) {
             throw new Error(
-              data.error || data.message || "Failed to retrieve marks",
+              data.error || data.message || "Failed to retrieve marks"
             );
           }
 
@@ -134,45 +132,40 @@
             throw new Error("Invalid marks data received from server.");
           }
 
-          // Find the selected exam
-          const mark = data.find((m) => m.exam_type === exam);
+          // Find records matching selected exam
+          const matching = data.filter((m) => m.exam_type === exam);
 
-          if (!mark) {
-            currentMarkId = null;
-
+          if (matching.length === 0) {
+            currentMarkRecords = [];
             document.getElementById("firstLanguage").value = "";
             document.getElementById("secondLanguage").value = "";
             document.getElementById("maths").value = "";
             document.getElementById("science").value = "";
             document.getElementById("arts").value = "";
-            document.getElementById("other").value = "";
 
             alert("Marks not found for this exam.");
             return;
           }
 
-          // Store the database mark_id
-          currentMarkId = mark.mark_id;
+          currentMarkRecords = matching;
 
-          // Display the marks
-          document.getElementById("firstLanguage").value =
-            mark.first_language ?? 0;
+          document.getElementById("firstLanguage").value = "";
+          document.getElementById("secondLanguage").value = "";
+          document.getElementById("maths").value = "";
+          document.getElementById("science").value = "";
+          document.getElementById("arts").value = "";
 
-          document.getElementById("secondLanguage").value =
-            mark.second_language ?? 0;
-
-          document.getElementById("maths").value = mark.mathematics ?? 0;
-
-          document.getElementById("science").value = mark.science ?? 0;
-
-          document.getElementById("arts").value = mark.arts ?? 0;
-
-          document.getElementById("other").value = mark.others ?? 0;
+          matching.forEach((m) => {
+            if (m.subject_code === "FL101") document.getElementById("firstLanguage").value = m.marks_obtained;
+            if (m.subject_code === "SL102") document.getElementById("secondLanguage").value = m.marks_obtained;
+            if (m.subject_code === "MTH103") document.getElementById("maths").value = m.marks_obtained;
+            if (m.subject_code === "SCI104") document.getElementById("science").value = m.marks_obtained;
+            if (m.subject_code === "ART105") document.getElementById("arts").value = m.marks_obtained;
+          });
 
           alert("Marks loaded successfully!");
         } catch (error) {
           console.error("Error getting marks:", error);
-
           alert("Failed to get marks: " + error.message);
         }
       }
@@ -182,49 +175,48 @@
         .addEventListener("submit", async function (e) {
           e.preventDefault();
 
-          if (!currentMarkId) {
+          if (currentMarkRecords.length === 0) {
             alert("Please get the marks first.");
             return;
           }
 
-          if (!confirm("Are you sure you want to delete these marks?")) {
+          if (!confirm(`Are you sure you want to delete ${currentMarkRecords.length} mark record(s)?`)) {
             return;
           }
 
-          try {
-            const response = await fetch(
-              `http://localhost:5000/api/marks/${currentMarkId}`,
-              {
-                method: "DELETE",
-              },
-            );
+          let deletedCount = 0;
+          let errors = [];
 
-            const data = await response.json();
-
-            if (!response.ok) {
-              throw new Error(
-                data.error || data.message || "Failed to delete marks",
+          for (const rec of currentMarkRecords) {
+            try {
+              const res = await SMS_AUTH.fetch(
+                `http://localhost:5000/api/marks/${rec.mark_record_id}`,
+                {
+                  method: "DELETE",
+                }
               );
+              const data = await res.json();
+              if (res.ok) {
+                deletedCount++;
+              } else {
+                errors.push(`${rec.subject_name || rec.subject_code}: ${data.message}`);
+              }
+            } catch (err) {
+              errors.push(`${rec.subject_name || rec.subject_code}: ${err.message}`);
             }
+          }
 
-            alert("Marks Deleted Successfully!");
-
+          if (errors.length === 0) {
+            alert(`Marks Deleted Successfully (${deletedCount} record(s))!`);
             document.getElementById("deleteMarksForm").reset();
-
-            currentMarkId = null;
-          } catch (error) {
-            console.error("Error deleting marks:", error);
-
-            alert("Failed to delete marks: " + error.message);
+            currentMarkRecords = [];
+          } else {
+            alert(`Deleted ${deletedCount} record(s). Errors:\n` + errors.join("\n"));
           }
         });
 
       function logout() {
-        if (confirm("Do you want to exit?")) {
-          sessionStorage.removeItem("isLoggedIn");
-
-          window.location.href = "index.html";
-        }
+        SMS_AUTH.logout();
       }
     </script>
   </body>
