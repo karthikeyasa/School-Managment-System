@@ -31,7 +31,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: "https://school-management-system-fc7v.onrender.com", methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], allowedHeaders: ["Content-Type", "Authorization"] }));
 
 // Health check / welcome route
 app.get("/", (req, res) => {

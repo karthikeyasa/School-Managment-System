@@ -3,6 +3,12 @@
  * School Management System
  */
 const SMS_AUTH = {
+  API_BASE_URL:
+    window.SMS_API_BASE_URL ||
+    (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+      ? "http://localhost:5000"
+      : "https://school-managment-system-backend-u13d.onrender.com"),
   TOKEN_KEY: "sms_token",
   USER_KEY: "sms_user",
 
@@ -86,6 +92,8 @@ const SMS_AUTH = {
    * Authenticated fetch helper with Bearer token injection
    */
   async fetch(url, options = {}) {
+    url = url.replace("http://localhost:5000", this.API_BASE_URL);
+
     const headers = options.headers ? { ...options.headers } : {};
     const token = this.getToken();
 
@@ -93,7 +101,11 @@ const SMS_AUTH = {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    if (options.body && typeof options.body === "string" && !headers["Content-Type"]) {
+    if (
+      options.body &&
+      typeof options.body === "string" &&
+      !headers["Content-Type"]
+    ) {
       headers["Content-Type"] = "application/json";
     }
 
