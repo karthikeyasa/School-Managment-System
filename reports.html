@@ -56,7 +56,8 @@
         border-radius: var(--radius-md);
         overflow: hidden;
       }
-      .data-table th, .data-table td {
+      .data-table th,
+      .data-table td {
         padding: 12px 14px;
         text-align: left;
         border-bottom: 1px solid var(--border-color);
@@ -151,31 +152,57 @@
     </header>
 
     <div class="page-container">
-      <div style="margin-bottom: 25px;">
-        <h2 style="margin: 0; color: white;">Comprehensive Academic Reports</h2>
-        <p style="margin: 4px 0 0; color: var(--text-secondary); font-size: 14px;">
-          View individual student grade cards, class-wide performance metrics, attendance summaries, and faculty workloads.
+      <div style="margin-bottom: 25px">
+        <h2 style="margin: 0; color: white">Comprehensive Academic Reports</h2>
+        <p
+          style="margin: 4px 0 0; color: var(--text-secondary); font-size: 14px"
+        >
+          View individual student grade cards, class-wide performance metrics,
+          attendance summaries, and faculty workloads.
         </p>
       </div>
 
       <div class="report-tabs">
-        <button class="tab-btn active" onclick="switchReportTab('individualTab')">Individual Student Report</button>
-        <button class="tab-btn" onclick="switchReportTab('classPerfTab')">Class-Wise Performance</button>
-        <button class="tab-btn" onclick="switchReportTab('classAttTab')">Class Attendance Summary</button>
-        <button class="tab-btn" onclick="switchReportTab('teacherWorkTab')">Teacher Workloads</button>
+        <button
+          class="tab-btn active"
+          onclick="switchReportTab('individualTab')"
+        >
+          Individual Student Report
+        </button>
+        <button class="tab-btn" onclick="switchReportTab('classPerfTab')">
+          Class-Wise Performance
+        </button>
+        <button class="tab-btn" onclick="switchReportTab('classAttTab')">
+          Class Attendance Summary
+        </button>
+        <button class="tab-btn" onclick="switchReportTab('teacherWorkTab')">
+          Teacher Workloads
+        </button>
       </div>
 
       <!-- TAB 1: INDIVIDUAL STUDENT REPORT (Preserved Original Functionality) -->
       <div id="individualTab" class="panel active">
-        <div class="report-container" style="max-width: 100%; margin: 0;">
+        <div class="report-container" style="max-width: 100%; margin: 0">
           <h2>STUDENT REPORT</h2>
 
           <div class="search">
-            <input type="text" id="regno" placeholder="Enter Registration Number (e.g. STU001)" />
+            <input
+              type="text"
+              id="regno"
+              placeholder="Enter Registration Number (e.g. STU001)"
+            />
+
+            <select id="examType">
+              <option value="Mid Term">Mid Term</option>
+              <option value="Quarterly">Quarterly</option>
+              <option value="Final Exam">Final Exam</option>
+            </select>
+
             <button onclick="generateReport()">Search</button>
           </div>
 
           <div id="report">
+            <h3 id="selectedExamTitle">Examination Report</h3>
             <h3>Student Details</h3>
 
             <p><b>Registration No :</b> <span id="rno"></span></p>
@@ -184,35 +211,15 @@
             <p><b>Gender :</b> <span id="gender"></span></p>
 
             <table>
-              <tr>
-                <th>Subject</th>
-                <th>Marks</th>
-              </tr>
-
-              <tr>
-                <td>First Language</td>
-                <td id="fl"></td>
-              </tr>
-
-              <tr>
-                <td>Second Language</td>
-                <td id="sl"></td>
-              </tr>
-
-              <tr>
-                <td>Mathematics</td>
-                <td id="maths"></td>
-              </tr>
-
-              <tr>
-                <td>Science</td>
-                <td id="science"></td>
-              </tr>
-
-              <tr>
-                <td>Arts</td>
-                <td id="arts"></td>
-              </tr>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Marks</th>
+                </tr>
+              </thead>
+              <tbody id="subjectMarksBody">
+                <!-- Subject rows will be generated dynamically -->
+              </tbody>
             </table>
 
             <div class="summary">
@@ -248,11 +255,24 @@
 
       <!-- TAB 2: CLASS-WISE PERFORMANCE REPORT -->
       <div id="classPerfTab" class="panel">
-        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-lg);">
-          <h3 style="margin-top: 0; color: white;">Class-Wise Academic Performance</h3>
+        <div
+          style="
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 25px;
+            box-shadow: var(--shadow-lg);
+          "
+        >
+          <h3 style="margin-top: 0; color: white">
+            Class-Wise Academic Performance
+          </h3>
           <div class="filter-inline">
             <label>Select Class:</label>
-            <select id="classPerfSelect" onchange="loadClassPerformance(this.value)">
+            <select
+              id="classPerfSelect"
+              onchange="loadClassPerformance(this.value)"
+            >
               <option value="">Choose Class</option>
             </select>
           </div>
@@ -275,7 +295,18 @@
               </tr>
             </thead>
             <tbody id="classPerfBody">
-              <tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 25px;">Select a class above to generate report.</td></tr>
+              <tr>
+                <td
+                  colspan="12"
+                  style="
+                    text-align: center;
+                    color: var(--text-muted);
+                    padding: 25px;
+                  "
+                >
+                  Select a class above to generate report.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -283,11 +314,22 @@
 
       <!-- TAB 3: CLASS ATTENDANCE SUMMARY -->
       <div id="classAttTab" class="panel">
-        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-lg);">
-          <h3 style="margin-top: 0; color: white;">Class Attendance Summary</h3>
+        <div
+          style="
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 25px;
+            box-shadow: var(--shadow-lg);
+          "
+        >
+          <h3 style="margin-top: 0; color: white">Class Attendance Summary</h3>
           <div class="filter-inline">
             <label>Select Class:</label>
-            <select id="classAttSelect" onchange="loadClassAttendance(this.value)">
+            <select
+              id="classAttSelect"
+              onchange="loadClassAttendance(this.value)"
+            >
               <option value="">Choose Class</option>
             </select>
           </div>
@@ -305,7 +347,18 @@
               </tr>
             </thead>
             <tbody id="classAttBody">
-              <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 25px;">Select a class above to view attendance metrics.</td></tr>
+              <tr>
+                <td
+                  colspan="7"
+                  style="
+                    text-align: center;
+                    color: var(--text-muted);
+                    padding: 25px;
+                  "
+                >
+                  Select a class above to view attendance metrics.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -313,8 +366,18 @@
 
       <!-- TAB 4: TEACHER WORKLOADS REPORT -->
       <div id="teacherWorkTab" class="panel">
-        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-lg);">
-          <h3 style="margin-top: 0; color: white;">Faculty Workloads & Subject Assignments</h3>
+        <div
+          style="
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 25px;
+            box-shadow: var(--shadow-lg);
+          "
+        >
+          <h3 style="margin-top: 0; color: white">
+            Faculty Workloads & Subject Assignments
+          </h3>
           <table class="data-table">
             <thead>
               <tr>
@@ -329,7 +392,18 @@
               </tr>
             </thead>
             <tbody id="teacherWorkBody">
-              <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">Loading teacher workload report...</td></tr>
+              <tr>
+                <td
+                  colspan="8"
+                  style="
+                    text-align: center;
+                    color: var(--text-muted);
+                    padding: 25px;
+                  "
+                >
+                  Loading teacher workload report...
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -339,8 +413,12 @@
     <!-- SCRIPT -->
     <script>
       function switchReportTab(tabId) {
-        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document
+          .querySelectorAll(".panel")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.remove("active"));
         document.getElementById(tabId).classList.add("active");
         event.currentTarget.classList.add("active");
 
@@ -356,7 +434,7 @@
           const pSelect = document.getElementById("classPerfSelect");
           const aSelect = document.getElementById("classAttSelect");
 
-          classes.forEach(c => {
+          classes.forEach((c) => {
             pSelect.innerHTML += `<option value="${c.class_code}">${c.class_code}</option>`;
             aSelect.innerHTML += `<option value="${c.class_code}">${c.class_code}</option>`;
           });
@@ -369,6 +447,7 @@
       // Original Individual Report Function
       // ------------------------------------
       async function generateReport() {
+        const selectedExam = document.getElementById("examType").value;
         const reg = document.getElementById("regno").value.trim();
 
         if (!reg) {
@@ -378,77 +457,172 @@
 
         try {
           const studentResponse = await SMS_AUTH.fetch(
-            `http://localhost:5000/api/students/${encodeURIComponent(reg)}`
+            `http://localhost:5000/api/students/${encodeURIComponent(reg)}`,
           );
 
           const studentData = await studentResponse.json();
           if (!studentResponse.ok) {
-            throw new Error(studentData.error || studentData.message || "Student not found");
+            throw new Error(
+              studentData.error || studentData.message || "Student not found",
+            );
           }
 
           const marksResponse = await SMS_AUTH.fetch(
-            `http://localhost:5000/api/marks/${encodeURIComponent(reg)}`
+            `http://localhost:5000/api/marks/${encodeURIComponent(reg)}`,
           );
 
           const marksData = await marksResponse.json();
-          if (!marksResponse.ok || !Array.isArray(marksData) || marksData.length === 0) {
+          if (
+            !marksResponse.ok ||
+            !Array.isArray(marksData) ||
+            marksData.length === 0
+          ) {
             alert("No marks found for this student.");
             return;
           }
 
           const reportResponse = await SMS_AUTH.fetch(
-            `http://localhost:5000/api/reports/${encodeURIComponent(reg)}`
+            `http://localhost:5000/api/reports/${encodeURIComponent(reg)}`,
           );
 
           const reportData = await reportResponse.json();
 
+          if (!reportResponse.ok) {
+            throw new Error("Failed to fetch student reports.");
+          }
+
           const attendanceResponse = await SMS_AUTH.fetch(
-            "http://localhost:5000/api/attendance-report"
+            "http://localhost:5000/api/attendance-report",
           );
 
           const attendanceData = await attendanceResponse.json();
           const attendanceReport = Array.isArray(attendanceData)
-            ? attendanceData.find(s => s.reg_no === reg)
+            ? attendanceData.find((s) => s.reg_no === reg)
             : null;
 
-          const mark = marksData[0];
-          const report = Array.isArray(reportData)
-            ? (reportData.find(r => r.mark_id === mark.mark_id) || reportData[0])
-            : reportData;
+          // Select the report that matches an available marks record
+          const reportList = Array.isArray(reportData)
+            ? reportData
+            : [reportData];
+
+          const report = reportList.find(
+            (r) =>
+              r.exam_type === selectedExam &&
+              marksData.some(
+                (m) =>
+                  m.exam_type === r.exam_type &&
+                  m.academic_year === r.academic_year &&
+                  Number(m.attempt_number) === Number(r.attempt_number),
+              ),
+          );
+
+          if (!report) {
+            throw new Error(
+              `No matching ${selectedExam} examination report found.`,
+            );
+          }
+
+          document.getElementById("selectedExamTitle").textContent =
+            `${selectedExam} Report`;
 
           // Display student details
           document.getElementById("rno").textContent = studentData.reg_no || "";
-          document.getElementById("name").textContent = studentData.full_name || "";
-          document.getElementById("class").textContent = studentData.class || "";
-          document.getElementById("gender").textContent = studentData.gender || "";
+          document.getElementById("name").textContent =
+            studentData.full_name || "";
+          document.getElementById("class").textContent =
+            studentData.class || "";
+          document.getElementById("gender").textContent =
+            studentData.gender || "";
 
-          // Display marks
-          const fl = mark.first_language ?? 0;
-          const sl = mark.second_language ?? 0;
-          const ma = mark.mathematics ?? 0;
-          const sc = mark.science ?? 0;
-          const ar = mark.arts ?? 0;
+          // Select marks matching this report's examination
+          const examMarks = marksData.filter(
+            (m) =>
+              m.exam_type === report?.exam_type &&
+              m.academic_year === report?.academic_year &&
+              Number(m.attempt_number) === Number(report?.attempt_number),
+          );
 
-          document.getElementById("fl").textContent = fl;
-          document.getElementById("sl").textContent = sl;
-          document.getElementById("maths").textContent = ma;
-          document.getElementById("science").textContent = sc;
-          document.getElementById("arts").textContent = ar;
+          // Convert normalized subject records into a lookup map
+          const marksBySubject = {};
+          examMarks.forEach((m) => {
+            marksBySubject[String(m.subject_name).trim().toLowerCase()] =
+              Number(m.marks_obtained);
+          });
 
-          // Calculated values (5 core subjects, divisor 5.0)
-          const total = report && report.total_marks !== undefined ? report.total_marks : (Number(fl) + Number(sl) + Number(ma) + Number(sc) + Number(ar));
-          const average = report && report.average !== undefined ? report.average : (Number(total) / 5).toFixed(2);
-          const grade = report && report.grade ? report.grade : "N/A";
+          // Fetch the active subjects from the backend
+          const subjectsResponse = await SMS_AUTH.fetch(
+            "http://localhost:5000/api/subjects",
+          );
+
+          const subjectsData = await subjectsResponse.json();
+
+          if (!subjectsResponse.ok || !Array.isArray(subjectsData)) {
+            throw new Error("Failed to load subjects.");
+          }
+
+          // Display marks dynamically for every subject
+          const subjectMarksBody = document.getElementById("subjectMarksBody");
+
+          subjectMarksBody.innerHTML = "";
+
+          let total = 0;
+          let subjectCount = 0;
+
+          subjectsData.forEach((subject) => {
+            const subjectName = subject.subject_name || subject.name;
+
+            const key = String(subjectName).trim().toLowerCase();
+            const mark = marksBySubject[key];
+
+            const row = document.createElement("tr");
+            const nameCell = document.createElement("td");
+            const marksCell = document.createElement("td");
+
+            nameCell.textContent = subjectName;
+
+            if (mark !== undefined) {
+              marksCell.textContent = mark;
+              total += Number(mark);
+              subjectCount++;
+            } else {
+              marksCell.textContent = "-";
+            }
+
+            row.append(nameCell, marksCell);
+            subjectMarksBody.appendChild(row);
+          });
+
+          // Calculate total and average using subjects with recorded marks
+          const average = subjectCount > 0 ? total / subjectCount : 0;
+
+          // Preserve the equivalent of your existing grading thresholds
+          const grade =
+            subjectCount === 0
+              ? "N/A"
+              : average >= 90
+                ? "A+"
+                : average >= 80
+                  ? "A"
+                  : average >= 70
+                    ? "B+"
+                    : average >= 60
+                      ? "B"
+                      : average >= 50
+                        ? "C"
+                        : "F";
 
           document.getElementById("total").textContent = total;
-          document.getElementById("average").textContent = Number(average).toFixed(2);
+          document.getElementById("average").textContent = average.toFixed(2);
           document.getElementById("grade").textContent = grade;
 
           // Display attendance
           if (attendanceReport) {
-            document.getElementById("totalDays").textContent = attendanceReport.total_days;
-            document.getElementById("presentDays").textContent = attendanceReport.present_days;
-            document.getElementById("absentDays").textContent = attendanceReport.absent_days;
+            document.getElementById("totalDays").textContent =
+              attendanceReport.total_days;
+            document.getElementById("presentDays").textContent =
+              attendanceReport.present_days;
+            document.getElementById("absentDays").textContent =
+              attendanceReport.absent_days;
             document.getElementById("attendancePercentage").textContent =
               attendanceReport.attendance_percentage !== null
                 ? `${Number(attendanceReport.attendance_percentage).toFixed(2)}%`
@@ -479,7 +653,9 @@
         }
 
         try {
-          const res = await SMS_AUTH.fetch(`http://localhost:5000/api/reports/class-performance/${encodeURIComponent(classCode)}`);
+          const res = await SMS_AUTH.fetch(
+            `http://localhost:5000/api/reports/class-performance/${encodeURIComponent(classCode)}`,
+          );
           const list = await res.json();
 
           if (list.length === 0) {
@@ -487,7 +663,9 @@
             return;
           }
 
-          tbody.innerHTML = list.map(r => `
+          tbody.innerHTML = list
+            .map(
+              (r) => `
             <tr>
               <td><b>${r.reg_no}</b></td>
               <td>${r.full_name}</td>
@@ -502,7 +680,9 @@
               <td>${Number(r.average).toFixed(2)}</td>
               <td><span class="badge-grade">${r.grade}</span></td>
             </tr>
-          `).join("");
+          `,
+            )
+            .join("");
         } catch (err) {
           tbody.innerHTML = `<tr><td colspan="12" style="color: #ef4444; text-align: center;">Error: ${err.message}</td></tr>`;
         }
@@ -519,7 +699,9 @@
         }
 
         try {
-          const res = await SMS_AUTH.fetch(`http://localhost:5000/api/reports/class-attendance/${encodeURIComponent(classCode)}`);
+          const res = await SMS_AUTH.fetch(
+            `http://localhost:5000/api/reports/class-attendance/${encodeURIComponent(classCode)}`,
+          );
           const list = await res.json();
 
           if (list.length === 0) {
@@ -527,7 +709,9 @@
             return;
           }
 
-          tbody.innerHTML = list.map(r => `
+          tbody.innerHTML = list
+            .map(
+              (r) => `
             <tr>
               <td><b>${r.reg_no}</b></td>
               <td>${r.full_name}</td>
@@ -535,9 +719,11 @@
               <td>${r.total_days}</td>
               <td style="color: #34d399;">${r.present_days}</td>
               <td style="color: #fb7185;">${r.absent_days}</td>
-              <td><b>${r.attendance_percentage !== null ? Number(r.attendance_percentage).toFixed(2) + '%' : 'N/A'}</b></td>
+              <td><b>${r.attendance_percentage !== null ? Number(r.attendance_percentage).toFixed(2) + "%" : "N/A"}</b></td>
             </tr>
-          `).join("");
+          `,
+            )
+            .join("");
         } catch (err) {
           tbody.innerHTML = `<tr><td colspan="7" style="color: #ef4444; text-align: center;">Error: ${err.message}</td></tr>`;
         }
@@ -549,7 +735,9 @@
       async function loadTeacherWorkloads() {
         const tbody = document.getElementById("teacherWorkBody");
         try {
-          const res = await SMS_AUTH.fetch("http://localhost:5000/api/reports/teacher-workloads");
+          const res = await SMS_AUTH.fetch(
+            "http://localhost:5000/api/reports/teacher-workloads",
+          );
           const list = await res.json();
 
           if (list.length === 0) {
@@ -557,7 +745,9 @@
             return;
           }
 
-          tbody.innerHTML = list.map(t => `
+          tbody.innerHTML = list
+            .map(
+              (t) => `
             <tr>
               <td><b>${t.teacher_id}</b></td>
               <td style="color: white;">${t.full_name}</td>
@@ -568,7 +758,9 @@
               <td><span class="badge">${t.total_assignments} assignments</span></td>
               <td><b>${t.weekly_periods}</b> periods/week</td>
             </tr>
-          `).join("");
+          `,
+            )
+            .join("");
         } catch (err) {
           tbody.innerHTML = `<tr><td colspan="8" style="color: #ef4444; text-align: center;">Error: ${err.message}</td></tr>`;
         }
