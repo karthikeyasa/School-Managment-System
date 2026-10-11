@@ -71,22 +71,30 @@
       <nav>
         <ul>
           <li class="active"><a href="index.html">Home</a></li>
-          <li onclick="alert('Please log in with valid credentials first.')">Academics</li>
-          <li onclick="alert('Please log in with valid credentials first.')">Attendance</li>
-          <li onclick="alert('Please log in with valid credentials first.')">Reports</li>
+          <li onclick="alert('Please log in with valid credentials first.')">
+            Academics
+          </li>
+          <li onclick="alert('Please log in with valid credentials first.')">
+            Attendance
+          </li>
+          <li onclick="alert('Please log in with valid credentials first.')">
+            Reports
+          </li>
         </ul>
       </nav>
     </header>
 
-    <div class="main">
+    <main class="main">
+      <!-- Left: School campus image -->
       <div class="home">
         <img
-          src="https://www.svgrepo.com/show/436138/education-bag-learning-24.svg"
-          alt="School Illustration"
+          src="docs/login_image.png"
+          alt="School campus with books and graduation cap"
         />
       </div>
 
-      <div class="Login">
+      <!-- Right: Login form -->
+      <section class="Login">
         <div class="form-container">
           <div class="role-tabs">
             <button
@@ -97,6 +105,7 @@
             >
               Administrator
             </button>
+
             <button
               type="button"
               class="role-tab-btn"
@@ -119,7 +128,7 @@
                 type="text"
                 id="username"
                 name="username"
-                autocomplete="off"
+                autocomplete="username"
                 placeholder="e.g. admin"
                 required
               />
@@ -131,6 +140,7 @@
                 type="password"
                 id="password"
                 name="password"
+                autocomplete="current-password"
                 placeholder="Enter your password"
                 required
               />
@@ -141,8 +151,8 @@
             </div>
           </form>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
 
     <script>
       let currentRole = "admin";
@@ -162,14 +172,15 @@
           adminTab.classList.add("active");
           teacherTab.classList.remove("active");
           loginTitle.textContent = "ADMINISTRATOR LOGIN";
-          loginSubtitle.textContent = "Enter administrator username and password";
+          loginSubtitle.textContent =
+            "Enter administrator username and password";
           usernameLabel.textContent = "Username :";
           usernameInput.placeholder = "e.g. admin";
         } else {
           teacherTab.classList.add("active");
           adminTab.classList.remove("active");
           loginTitle.textContent = "TEACHER LOGIN";
-          loginSubtitle.textContent = "Enter teacher ID (e.g. TCH001) or email";
+          loginSubtitle.textContent = "Enter teacher ID or email and password";
           usernameLabel.textContent = "Teacher ID / Email :";
           usernameInput.placeholder = "e.g. TCH001 or teacher@school.com";
         }
@@ -179,7 +190,9 @@
       function showAlert(msg, isError = true) {
         const box = document.getElementById("alertBox");
         box.textContent = msg;
-        box.className = isError ? "alert-box alert-error" : "alert-box alert-success";
+        box.className = isError
+          ? "alert-box alert-error"
+          : "alert-box alert-success";
         box.style.display = "block";
       }
 
@@ -202,17 +215,20 @@
           loginBtn.textContent = "Signing In...";
 
           try {
-            const response = await fetch("http://localhost:5000/api/auth/login", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
+            const response = await fetch(
+              "http://localhost:5000/api/auth/login",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  username,
+                  password,
+                  role: currentRole,
+                }),
               },
-              body: JSON.stringify({
-                username,
-                password,
-                role: currentRole,
-              }),
-            });
+            );
 
             const data = await response.json();
 
@@ -233,7 +249,9 @@
             }, 600);
           } catch (error) {
             console.error("Login failed:", error);
-            showAlert(error.message || "Failed to connect to authentication server.");
+            showAlert(
+              error.message || "Failed to connect to authentication server.",
+            );
           } finally {
             loginBtn.disabled = false;
             loginBtn.textContent = "Login";

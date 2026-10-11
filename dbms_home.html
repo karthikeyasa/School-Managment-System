@@ -170,15 +170,11 @@
             </a>
           </div>
         </div>
-        <div style="text-align: center">
+
+        <div class="hero-image">
           <img
-            src="https://www.svgrepo.com/show/436138/education-bag-learning-24.svg"
-            alt="School Illustration"
-            style="
-              width: 220px;
-              height: auto;
-              filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
-            "
+            src="docs/img_home.png"
+            alt="Modern school campus with students arriving"
           />
         </div>
       </div>
@@ -783,7 +779,9 @@
 
       async function loadStudentsForSearch() {
         try {
-          const response = await SMS_AUTH.fetch("http://localhost:5000/api/students");
+          const response = await SMS_AUTH.fetch(
+            "http://localhost:5000/api/students",
+          );
 
           if (!response.ok) {
             throw new Error("Failed to load students");
@@ -852,7 +850,9 @@
       // Load dashboard statistics from PostgreSQL
       async function loadDashboardStatistics() {
         try {
-          const response = await SMS_AUTH.fetch("http://localhost:5000/api/dashboard");
+          const response = await SMS_AUTH.fetch(
+            "http://localhost:5000/api/dashboard",
+          );
 
           if (!response.ok) {
             throw new Error("Failed to load dashboard statistics");

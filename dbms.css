@@ -241,74 +241,160 @@ nav ul li.active > a {
   display: block;
 }
 
-/*HOME & LOGIN PAGE LAYOUT*/
+/* HOME & LOGIN PAGE LAYOUT */
 
 .main {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(360px, 0.8fr);
   align-items: center;
-  padding: 60px 80px;
-  max-width: 1300px;
+  gap: 40px;
+  width: 100%;
+  max-width: 1700px;
+  min-height: calc(100vh - 150px);
   margin: 0 auto;
-  gap: 50px;
+  padding: 20px 35px;
+  box-sizing: border-box;
 }
 
 .home {
-  flex: 1;
-  text-align: center;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+  position: relative;
+
+  /* Blend the image into the page background */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black 55%,
+    rgba(0, 0, 0, 0.85) 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black 55%,
+    rgba(0, 0, 0, 0.85) 72%,
+    transparent 100%
+  );
 }
 
 .home img {
-  width: 380px;
-  max-width: 100%;
-  height: auto;
-  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
-  transition: var(--transition);
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 580px;
+  max-height: 720px;
+  object-fit: cover;
+  object-position: left center;
+  transform: scale(1.04);
+  transform-origin: left center;
+
+  /* Remove the hard image edge */
+  border-radius: 0;
+  filter: saturate(0.95) brightness(0.92);
+  transition: filter 0.3s ease;
 }
 
 .home img:hover {
-  transform: translateY(-6px);
+  filter: saturate(1) brightness(1);
 }
 
 .Login {
-  flex: 1;
+  width: 100%;
+  min-width: 0;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
-.form-container {
-  width: 380px;
-  max-width: 100%;
-  background: rgba(21, 31, 50, 0.92);
-  border: 1px solid var(--border-color);
+.Login .form-container {
+  width: 100%;
+  max-width: 410px;
+  box-sizing: border-box;
+}
+
+/* TABLET */
+
+@media (max-width: 900px) {
+  .main {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr);
+    gap: 28px;
+    padding: 28px;
+  }
+}
+
+/* MOBILE */
+
+@media (max-width: 700px) {
+  .main {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 24px 18px;
+  }
+
+  .home img {
+    max-width: 480px;
+    max-height: 300px;
+  }
+
+  .Login .form-container {
+    max-width: 410px;
+  }
+
+  .home {
+    height: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .home img {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: 300px;
+    object-fit: contain;
+    transform: none;
+    border-radius: 12px;
+  }
+}
+
+/* LOGIN CARD */
+
+.Login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.Login .form-container {
+  width: 100%;
+  max-width: 420px;
   padding: 35px;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-sizing: border-box;
+
+  background: rgba(21, 31, 50, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 18px;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3),
+    0 0 25px rgba(79, 140, 255, 0.07);
+
   backdrop-filter: blur(16px);
   transition:
     border-color 0.25s ease,
     box-shadow 0.25s ease;
 }
 
-.form-container:hover {
-  border-color: rgba(79, 140, 255, 0.3);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.26);
-}
-
-.form-container h2 {
-  text-align: center;
-  color: #ffffff;
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.form-container p {
-  text-align: center;
-  color: var(--text-muted);
-  margin-bottom: 25px;
-  font-size: 14px;
+.Login .form-container:hover {
+  border-color: rgba(79, 140, 255, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
 /*COMMON FORM & CONTAINERS*/
@@ -617,16 +703,22 @@ tr:hover td {
     align-items: center;
     text-align: center;
   }
+
   .logo {
     justify-content: center;
   }
+
   .main {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr);
+    gap: 25px;
     padding: 30px;
   }
+
   .home img {
-    width: 280px;
+    width: 100%;
+    max-width: 500px;
   }
+
   .Login {
     width: 100%;
   }
@@ -757,4 +849,70 @@ tr:hover td {
 /* Keep the dropdown visible while hovering */
 .dropdown:hover > .dropdown-content {
   display: block;
+}
+
+/* Dashboard hero image */
+
+/* Seamlessly blended dashboard image */
+
+/* Seamless dashboard campus image */
+
+.hero-image {
+  width: 340px;
+  height: 240px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+
+  /* Fade left, right, top and bottom */
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    #000 35%,
+    rgba(0, 0, 0, 0.95) 48%,
+    rgba(0, 0, 0, 0.65) 65%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse at center,
+    #000 35%,
+    rgba(0, 0, 0, 0.95) 48%,
+    rgba(0, 0, 0, 0.65) 65%,
+    transparent 100%
+  );
+}
+
+.hero-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  filter: brightness(1.05) saturate(1.05);
+}
+
+.hero-image:hover img {
+  transform: scale(1.12);
+}
+
+.hero-image img {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.7) 15%,
+    black 40%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.7) 15%,
+    black 40%
+  );
 }
