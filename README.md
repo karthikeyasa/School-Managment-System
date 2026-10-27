@@ -6,8 +6,7 @@ The project demonstrates how a relational database, a REST-style Express API, an
 
 <p align="center">
   <a href="https://school-management-system-fc7v.onrender.com/">Live Demo</a> ·
-  <a href="https://github.com/karthikeyasa/School-Managment-System">Source Code</a> ·
-  <a href="docs/School-Management-System-Project-Report.docx">Project Report (DOCX)</a>
+  <a href="https://github.com/karthikeyasa/School-Managment-System">Source Code</a>
 </p>
 
 ## 1. Project Overview
@@ -97,7 +96,6 @@ School-Managment-System/
 │   └── migrations/            # Schema migrations and rollback
 └── docs/
     ├── DB-Design.docx         # Database design document
-    ├── School-Management-System-Project-Report.docx  # Project report
     └── screenshots/           # UI screenshots
 ```
 
@@ -277,9 +275,9 @@ Before using the system with real data, also verify login, each role's access re
 - Parent and student portals are not currently included.
 - Potential future improvements include password reset and multi-factor authentication, notifications, fee management, exportable PDF/Excel reports, and richer analytics.
 
-## Project Report
+## Database Design Document
 
-The DBMS project report is available at [`docs/School-Management-System-Project-Report.docx`](docs/School-Management-System-Project-Report.docx). The database design document is available at [`docs/DB-Design.docx`](docs/DB-Design.docx).
+The database design document is available at [`docs/DB-Design.docx`](docs/DB-Design.docx).
 
 ## Team
 
