@@ -122,9 +122,10 @@ cd School-Managment-System
 ```bash
 cd backend
 npm install
+cd ..
 ```
 
-Copy `.env.example` to `.env` and set values for your local PostgreSQL instance and a strong JWT secret. Example keys (use your own values):
+Copy `backend/.env.example` to `backend/.env` and set values for your local PostgreSQL instance and a strong JWT secret. Example keys (use your own values):
 
 ```env
 DB_USER=postgres
@@ -139,6 +140,8 @@ JWT_SECRET=replace_with_a_long_random_secret
 Do not commit `.env` or share real credentials. The server refuses to start if `JWT_SECRET` is missing or empty.
 
 ### 3. Set up PostgreSQL
+
+Run these database commands from the repository root (the directory containing `database/`). They require PostgreSQL command-line tools (`createdb` and `psql`) to be installed and available on your PATH.
 
 For a **new, empty development database**, create the database and apply the canonical schema from the repository root:
 
